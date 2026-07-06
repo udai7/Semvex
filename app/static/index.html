@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-view="landing">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Semvex — Semantic Product Search</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔎</text></svg>" />
+</head>
+<body>
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand" data-nav="landing">
+      <span class="brand-mark">◈</span> Semvex
+    </div>
+    <nav class="topbar-actions">
+      <span id="userChip" class="user-chip hidden"></span>
+      <button id="navSignIn" class="btn btn-ghost" data-nav="auth">Sign in</button>
+      <button id="navSignOut" class="btn btn-ghost hidden">Sign out</button>
+    </nav>
+  </header>
+
+  <!-- ============ LANDING ============ -->
+  <main class="view view-landing">
+    <section class="hero">
+      <p class="eyebrow">Semantic + keyword retrieval, side by side</p>
+      <h1>Search that understands<br /><span class="grad">what shoppers mean.</span></h1>
+      <p class="lede">
+        Keyword search matches strings. Semvex matches intent — so
+        <em>“sports sneakers”</em> finds your running shoes and
+        <em>“cheap gaming laptop”</em> understands budget and specs.
+        Compare BM25, dense-vector, and hybrid ranking on one query.
+      </p>
+      <div class="hero-cta">
+        <button class="btn btn-primary" data-nav="auth">Try the demo →</button>
+        <a class="btn btn-ghost" href="#how">How it works</a>
+      </div>
+      <div class="hero-strip">
+        <div><b>3</b> retrieval modes</div>
+        <div><b>RRF</b> hybrid fusion</div>
+        <div><b>2FA</b> secured access</div>
+      </div>
+    </section>
+
+    <section class="features" id="how">
+      <article class="feature">
+        <div class="feature-ic">⌨️</div>
+        <h3>Keyword (BM25)</h3>
+        <p>A real lexical baseline over title, brand, category and description — the honest strawman to beat.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-ic">🧭</div>
+        <h3>Semantic</h3>
+        <p>Dense embeddings (bge-small when installed) rank by meaning, catching synonyms and intent keywords miss.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-ic">⚖️</div>
+        <h3>Hybrid</h3>
+        <p>Reciprocal Rank Fusion blends both rankings, usually landing the best relevance of the three.</p>
+      </article>
+    </section>
+  </main>
+
+  <!-- ============ AUTH ============ -->
+  <main class="view view-auth">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab is-active" data-mode="signin">Sign in</button>
+        <button class="auth-tab" data-mode="signup">Create account</button>
+      </div>
+
+      <button id="googleBtn" class="btn btn-google">
+        <span class="g">G</span> Continue with Google
+      </button>
+      <div class="divider"><span>or</span></div>
+
+      <form id="authForm" class="auth-form" autocomplete="on">
+        <label>Email
+          <input id="email" type="email" required placeholder="you@example.com" />
+        </label>
+        <label>Password
+          <input id="password" type="password" required placeholder="••••••••" minlength="8" />
+        </label>
+        <p class="hint" id="signupHint" hidden>Minimum 8 characters. You’ll set up 2-step verification next.</p>
+        <p class="form-error" id="authError" role="alert"></p>
+        <button class="btn btn-primary" id="authSubmit" type="submit">Sign in</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- ============ 2FA SETUP ============ -->
+  <main class="view view-totp-setup">
+    <div class="auth-card">
+      <h2>Set up 2-step verification</h2>
+      <p class="hint">Scan this QR code with Google Authenticator, Authy, or any TOTP app.</p>
+      <div id="qrBox" class="qr-box">Loading…</div>
+      <p class="secret-line">Can’t scan? Enter this key manually:<br /><code id="secretText">—</code></p>
+      <form id="totpSetupForm" class="auth-form">
+        <label>6-digit code
+          <input id="setupCode" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="123456" required />
+        </label>
+        <p class="form-error" id="setupError" role="alert"></p>
+        <button class="btn btn-primary" type="submit">Verify & enable</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- ============ 2FA VERIFY ============ -->
+  <main class="view view-totp-verify">
+    <div class="auth-card">
+      <h2>Two-step verification</h2>
+      <p class="hint">Enter the 6-digit code from your authenticator app.</p>
+      <form id="totpVerifyForm" class="auth-form">
+        <label>6-digit code
+          <input id="verifyCode" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="123456" required />
+        </label>
+        <p class="form-error" id="verifyError" role="alert"></p>
+        <button class="btn btn-primary" type="submit">Verify</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- ============ APP (SEARCH) ============ -->
+  <main class="view view-app">
+    <div class="search-head">
+      <form id="searchForm" class="search-bar">
+        <input id="query" type="search" placeholder="Try: sports sneakers for the gym…" autocomplete="off" />
+        <button class="btn btn-primary" type="submit">Search</button>
+      </form>
+      <div class="chips" id="exampleChips">
+        <button class="chip" data-q="sports sneakers">sports sneakers</button>
+        <button class="chip" data-q="cheap gaming laptop">cheap gaming laptop</button>
+        <button class="chip" data-q="waterproof shoes for the mountains">waterproof shoes for the mountains</button>
+        <button class="chip" data-q="wireless earphones for running">wireless earphones for running</button>
+        <button class="chip" data-q="warm footwear for snow">warm footwear for snow</button>
+      </div>
+      <div class="mode-row">
+        <div class="mode-toggle" id="modeToggle">
+          <button class="mode is-active" data-mode="compare">Compare</button>
+          <button class="mode" data-mode="keyword">Keyword</button>
+          <button class="mode" data-mode="semantic">Semantic</button>
+          <button class="mode" data-mode="hybrid">Hybrid</button>
+        </div>
+        <span class="embed-badge" id="embedBadge"></span>
+      </div>
+    </div>
+
+    <div id="results" class="results"></div>
+    <div id="emptyState" class="empty-state">
+      <p>Enter a query above, or pick an example. In <b>Compare</b> mode you’ll see keyword, semantic, and hybrid results side by side.</p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    Semvex · semantic product search demo · BM25 vs dense-vector vs hybrid (RRF)
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

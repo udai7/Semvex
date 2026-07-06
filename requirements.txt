@@ -1,0 +1,11 @@
+# --- Core (required to run) ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+email-validator>=2.0  # validates the email field on sign-up / login
+qrcode>=7.4            # 2FA QR codes (rendered as SVG, no PIL needed)
+
+# --- Optional: real semantic embeddings (matches PRD: BAAI/bge-small-en-v1.5) ---
+# The app runs without these using a lexical + synonym-expansion fallback.
+# Install to enable true dense-vector semantic search:
+#   pip install sentence-transformers
+# sentence-transformers>=2.7

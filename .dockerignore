@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+semvex.db
+.env
+.git/
+frontend/node_modules/
+frontend/.next/
+tests/
+docs/
