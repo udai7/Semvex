@@ -5,7 +5,7 @@
 **Day 1-2: Dataset decision + setup**
 - Pull Amazon Product Metadata + ESCI, check query volume per category
 - Pick the category subset (needs real synonym/intent variance — don't pick something narrow)
-- Set up Supabase project (pgvector extension enabled)
+- Set up Postgres (Neon) — pgvector extension auto-enabled on first connect
 - Set up local Elasticsearch container, confirm it runs on target Coolify host resources
 
 **Day 3-4: Ingestion pipeline v1**
@@ -48,7 +48,7 @@
 **Day 17-18: Deployment**
 - Dockerize frontend + API
 - Deploy to Coolify: frontend, API, Elasticsearch containers
-- Confirm Supabase connection from deployed API
+- Confirm Postgres (Neon) connection from deployed API
 - Smoke test the live demo end-to-end
 
 **Day 19-21: Polish + writeup**

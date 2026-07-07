@@ -34,10 +34,39 @@ SMTP), and a **streaming Amazon ESCI** ingestion pipeline.
 - **Infra**: `docker-compose.yml` now has a `pgvector/pgvector:pg16` postgres service + wires ES/HF/SMTP env into `api`. CI adds a `pgvector` service + `SEMVEX_TEST_DATABASE_URL` + a seed step before eval.
 - **Tests**: `tests/conftest.py` ported to Postgres (uses `SEMVEX_TEST_DATABASE_URL`, defaults to local :5433 container, never touches `DATABASE_URL`/Neon; session-seeds products, truncates mutable tables per test). `register_and_login` updated for the new signup+verify flow. Added email-verification + unverified-login tests. Two "semantic beats keyword" tests are `skipif` hashing-fallback. **Suite: 17 passed, 2 skipped.**
 
-### Known follow-ups / not done
-- **HF `hf` provider not live-tested** — implemented defensively but needs a real `HF_API_TOKEN` to verify the endpoint response shape end-to-end.
-- **`docs/production.md` / `docs/FEATURES.md`** — update for ES/HF/email if not already refreshed.
-- ESCI **price/category are synthesized** (ESCI lacks both) — fine for the demo; swap the heuristics in `ingest_esci.py` if a real taxonomy is wanted.
+### 📋 TODO — what still needs doing (ordered)
+
+**Blocking / verify next**
+1. **Live-test the HF `hf` embedding provider.** Implemented defensively but never run against a real endpoint. Add `HF_API_TOKEN` + `SEMVEX_EMBEDDING_PROVIDER=hf`, run one search, and confirm `_normalize_hf` handles the actual response shape (2-D vectors vs 3-D token embeddings). This gates the whole "no model on the VPS" plan.
+2. **Run a real ESCI ingest at scale.** Download `shopping_queries_dataset_products.parquet` (amazon-science/esci-data), `pip install -r requirements-ingest.txt`, then `python -m app.ingest_esci --source … --limit 50000`. Confirm PG count == ES count and spot-check semantic vs keyword. Only tested on a 7-row synthetic parquet so far.
+3. **Set `SEMVEX_EMBED_DIM` correctly if the HF model dim ≠ 384.** bge-small = 384 (matches schema). If a different HF model is chosen, the pgvector column + `EMBED_DIM` must change and the catalog must be re-ingested (vector-space + dimension must match).
+
+**Product / UX**
+4. **Frontend engine + provider surfacing.** Add a keyword-engine toggle (ES ↔ tsvector) and/or show `keyword_engine` + `embed_mode` from `/health` in the UI, so recruiters can see the BM25-vs-tsvector and semantic-vs-hashing story live.
+5. **Re-embed the demo catalog with real bge-small** once ingestion runs locally, so the 2 skipped "semantic beats keyword" tests actually pass and the live demo shows real semantic wins (currently hashing-fallback on Neon).
+
+**Infra / prod**
+6. **VPS deploy**: 4 GB box, `docker compose up` (drop the `postgres` service, point `DATABASE_URL` at Neon), self-host ES, `SEMVEX_EMBEDDING_PROVIDER=hf`. Add HTTPS origins/redirects for Google OAuth in prod.
+7. **Add `SMTP_APP_PASSWORD`** to prod `.env` for real verification emails (currently logs code to console when blank).
+8. **CI does not start Elasticsearch** — keyword tests run on the tsvector fallback there. Add an ES service to CI only if we want the ES path covered in CI.
+
+**Cleanup / lower priority**
+9. **`docs/FEATURES.md` has some stale code refs** from the pre-Postgres build (e.g. `_passes`, `suggest`, `_keyword_scores`) — mostly corrected, but audit the remaining rows against current `catalog.py`.
+10. **ESCI price/category are synthesized** (ESCI lacks both) — deterministic price + keyword-heuristic category in `ingest_esci.py`. Fine for the demo; swap for a real taxonomy if wanted.
+11. **`@app.on_event("startup")` is deprecated** (FastAPI) — migrate to a lifespan handler to silence the warning.
+12. **Multimodal (CLIP) image search** — still deferred (needs a CLIP model + real images).
+
+### 🎨 UI redesign (IN PROGRESS — first attempt rejected)
+
+Goal: overhaul `frontend/` to match **infisical.com**'s aesthetic. Tailwind is now set up (3.4.17 + shadcn-style utils + lucide + geist installed). **My first pass (light AMBER, rounded corners, scattered grid, Geist font) was rejected — "far from how their website looks."**
+
+**Real Infisical tokens (verified from their codebase + live HTML):**
+- Marketing site = **LIGHT**: bg `#ffffff` / page `#f7f7f7`, text `#000`, muted `rgba(38,38,38,0.32)`, border `#dcdcdc`, accent **lime `#e0ed34`**, font **Inter**. Primary button = black bg / white text / sharp, `active:scale-[0.97]`.
+- App (dark) confirms brand: `--color-primary:#e0ed34` (lime, 50–900 scale), `--color-yellow:#f1c40f`, Inter.
+
+**Must fix to match:** lime `#e0ed34` (not amber); **SHARP corners** (radius 0 buttons); **full-bleed hairlines that pass through component borders** (framed grid: vertical lines down page edges, full-width section dividers, `+` marks at intersections) — NOT scattered grid squares; **Inter** font (not Geist).
+
+**Files to redo:** `frontend/{tailwind.config.ts, app/globals.css, app/layout.tsx, app/page.tsx, components/ui/button.tsx, components/site-header.tsx, components/site-footer.tsx}`. Then repoint legacy inner-page CSS vars and reskin inner pages. Full detail in agent memory `ui-redesign-infisical`.
 
 ### Environment facts
 - Owner runs **Neon** as `DATABASE_URL`. Local **`semvex-pg`** container (`pgvector/pgvector:pg16`, :5433) is used for **tests** and was used for ES-path verification. Local **`semvex-es`** container (`elasticsearch:8.13.0`, :9200, 512m heap, security off) used to verify BM25.

@@ -49,7 +49,7 @@
 |---|---|
 | FR1 | Ingest and clean Amazon Product Metadata subset into Postgres |
 | FR2 | Generate embeddings (title + description + brand + category) for every product using a pretrained sentence-transformer |
-| FR3 | Store embeddings in Supabase Postgres via `pgvector` |
+| FR3 | Store embeddings in Postgres (Neon) via `pgvector` |
 | FR4 | Search API exposes: keyword-only results (Elasticsearch), semantic-only results (pgvector), and hybrid results for a given query |
 | FR5 | Frontend search UI: query box, results list, and a toggle/side-by-side view comparing keyword vs semantic results |
 | FR6 | Evaluation harness computes Recall@K, MRR, NDCG for both retrieval methods against ESCI relevance labels and outputs a comparison report |
@@ -70,7 +70,7 @@
 See `docs/architecture.md` for full detail. Summary:
 
 ```
-                                                    ┌──▶  Supabase Postgres + pgvector (semantic)
+                                                    ┌──▶  Postgres (Neon) + pgvector (semantic)
 Next.js (TS) frontend  ──▶  FastAPI service (Python)┤
                               - embed query          └──▶  Elasticsearch (keyword / BM25)
                               - vector search
@@ -78,7 +78,7 @@ Next.js (TS) frontend  ──▶  FastAPI service (Python)┤
                               - hybrid rank
 ```
 
-Offline: Python ingestion pipeline cleans ESCI + product metadata, batch-generates embeddings, loads into Supabase (pgvector) AND indexes the same product subset into Elasticsearch — one source of truth, two read paths.
+Offline: Python ingestion pipeline cleans ESCI + product metadata, batch-generates embeddings, loads into Postgres/pgvector (Neon) AND indexes the same product subset into Elasticsearch — one source of truth, two read paths.
 
 ---
 
@@ -89,7 +89,7 @@ Offline: Python ingestion pipeline cleans ESCI + product metadata, batch-generat
 | Frontend | Next.js + TypeScript |
 | Ranking/API service | FastAPI (Python), separate from Next.js |
 | Embedding model | `bge-small-en-v1.5` (pretrained, no fine-tuning) |
-| Vector storage | Supabase Postgres + `pgvector` |
+| Vector storage | Postgres (Neon) + `pgvector` |
 | Keyword baseline | Elasticsearch (BM25) |
 | Ingestion | Python (pandas, batch embedding jobs) |
 | Evaluation | Python — Recall@K, MRR, NDCG against ESCI labels |

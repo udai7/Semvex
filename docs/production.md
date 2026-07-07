@@ -11,34 +11,38 @@ Self-hosted via Docker + Coolify, matching existing Archilect infra pattern.
 | Frontend | Next.js (TS) | Standard Next.js Docker build, served behind Coolify's proxy |
 | Ranking API | FastAPI (Python) | Exposes `/search/keyword`, `/search/semantic`, `/search/hybrid`, `/health` |
 | Elasticsearch | Single-node ES container | Small heap size (e.g. `-Xms512m -Xmx512m` to start); no cluster needed at 50k-200k docs |
-| Database | Supabase (managed Postgres + pgvector) | Not self-hosted — use Supabase directly rather than running Postgres in Coolify, since Supabase gives pgvector + dashboard for free |
+| Database | **Neon** (managed Postgres + pgvector) | Not self-hosted — set `DATABASE_URL` to the Neon connection string. (Original PRD said Supabase; the build is provider-agnostic and uses Neon.) |
 
-Note: only Elasticsearch, FastAPI, and Next.js run on the Coolify host. Postgres/pgvector lives on Supabase (managed), which is simpler than self-hosting a fourth container and matches how you've handled Postgres in other Archilect projects.
+Note: only Elasticsearch, FastAPI, and Next.js run on the host. Postgres/pgvector
+is managed (Neon), so there's no fourth container to operate. See the
+authoritative `docker-compose.yml` at the repo root — the snippet below is the
+original shape and is kept only for reference.
 
-## 3. docker-compose (shape, not final)
+## 3. docker-compose (reference shape — see repo root for the real one)
 
 ```yaml
 services:
   frontend:
     build: ./frontend
     environment:
-      - NEXT_PUBLIC_API_URL=${API_URL}
+      - SEMVEX_API_URL=http://api:8000
     ports:
       - "3000:3000"
 
   api:
-    build: ./api
+    build: .
     environment:
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_SERVICE_KEY}
+      - DATABASE_URL=${DATABASE_URL}          # Neon (or bundled pgvector service)
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - SEMVEX_EMBEDDING_PROVIDER=${SEMVEX_EMBEDDING_PROVIDER:-hf}
+      - HF_API_TOKEN=${HF_API_TOKEN:-}
     depends_on:
       - elasticsearch
     ports:
       - "8000:8000"
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.x
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -52,7 +56,8 @@ volumes:
   es_data:
 ```
 
-Adjust ES version/heap once real container resource limits on the Coolify host are known — this is a starting point, not a benchmarked config.
+The real compose at the repo root also runs a `pgvector/pgvector:pg16` service
+for a fully-local option (set `DATABASE_URL` to Neon to skip it).
 
 > **As-built note:** the managed Postgres provider is **Neon** (not Supabase) —
 > set `DATABASE_URL` directly. See `.env.example` for the complete, authoritative
