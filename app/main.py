@@ -26,7 +26,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
 
-from . import config, security, store
+from . import config, email as email_service, security, store
 from .catalog import get_catalog, parse_nl_filters
 
 logging.basicConfig(
@@ -40,7 +40,10 @@ app = FastAPI(title="Semvex", version="2.0")
 
 @app.on_event("startup")
 def _startup() -> None:
-    store.init()
+    from .ingest import ensure_ingested
+
+    store.init()          # create schema (extension, tables, indexes)
+    ensure_ingested()     # seed products on first boot if empty
     cat = get_catalog()
     log.info("startup products=%d embed=%s rerank=%s",
              len(cat.products), cat.embed_mode, cat.rerank_mode)
@@ -107,6 +110,21 @@ class Credentials(BaseModel):
     password: str
 
 
+class SignupBody(BaseModel):
+    first_name: str
+    last_name: str
+    phone: str
+    email: EmailStr
+    password: str
+    confirm_password: str
+    agree_terms: bool
+
+
+class VerifyEmailBody(BaseModel):
+    preauth: str
+    code: str
+
+
 class Preauth(BaseModel):
     preauth: str
 
@@ -119,17 +137,90 @@ class EnableBody(BaseModel):
 # --------------------------------------------------------------------------- #
 # Email + password auth
 # --------------------------------------------------------------------------- #
+def _send_verification_code(email: str, name: str | None):
+    """Generate, store, and email a fresh 6-digit code. Returns an error
+    JSONResponse on failure, or None on success."""
+    code = security.generate_email_code()
+    store.store_email_code(email, security.hash_email_code(code), config.EMAIL_CODE_TTL)
+    if not email_service.send_verification_code(email, code, name):
+        return JSONResponse(
+            {"error": "Could not send the verification email. Please try again."},
+            status_code=502,
+        )
+    return None
+
+
 @app.post("/auth/signup")
-def signup(body: Credentials, request: Request):
+def signup(body: SignupBody, request: Request):
     _rate_limit(request)
     email = body.email.lower()
+    first, last, phone = body.first_name.strip(), body.last_name.strip(), body.phone.strip()
+
+    if not first or not last:
+        return JSONResponse({"error": "First and last name are required."}, status_code=400)
+    if not phone:
+        return JSONResponse({"error": "Phone number is required."}, status_code=400)
     if len(body.password) < 8:
         return JSONResponse({"error": "Password must be at least 8 characters."}, status_code=400)
-    if store.get_user(email):
+    if body.password != body.confirm_password:
+        return JSONResponse({"error": "Passwords do not match."}, status_code=400)
+    if not body.agree_terms:
+        return JSONResponse(
+            {"error": "You must agree to the Terms and Privacy Policy."}, status_code=400
+        )
+
+    existing = store.get_user(email)
+    pw_hash = security.hash_password(body.password)
+    if existing and existing["email_verified"]:
         return JSONResponse({"error": "Account already exists."}, status_code=409)
-    store.create_user(email, security.hash_password(body.password))
-    log.info("signup email=%s", email)
+    if existing:
+        # Unverified account re-signing up — refresh details and re-send a code.
+        store.update_pending_user(email, pw_hash, first, last, phone)
+    else:
+        store.create_user(email, pw_hash, first_name=first, last_name=last, phone=phone)
+
+    err = _send_verification_code(email, first)
+    if err:
+        return err
+    log.info("signup email=%s (pending verification)", email)
+    return {"next": "verify_email", "preauth": security.issue_preauth(email, "verify"), "email": email}
+
+
+@app.post("/auth/verify-email")
+def verify_email(body: VerifyEmailBody, request: Request):
+    _rate_limit(request)
+    email = security.read_preauth(body.preauth, "verify")
+    if not email:
+        return JSONResponse({"error": "Verification session expired."}, status_code=401)
+    result = store.check_email_code(
+        email, security.hash_email_code(body.code), config.EMAIL_CODE_MAX_ATTEMPTS
+    )
+    if result == "too_many":
+        return JSONResponse(
+            {"error": "Too many attempts. Request a new code."}, status_code=429
+        )
+    if result == "expired":
+        return JSONResponse(
+            {"error": "Code expired. Request a new one."}, status_code=401
+        )
+    if result != "ok":
+        return JSONResponse({"error": "Incorrect code. Try again."}, status_code=401)
+    store.mark_email_verified(email)
+    log.info("email-verified email=%s", email)
     return {"next": "totp_setup", "preauth": security.issue_preauth(email, "setup")}
+
+
+@app.post("/auth/verify-email/resend")
+def verify_email_resend(body: Preauth, request: Request):
+    _rate_limit(request)
+    email = security.read_preauth(body.preauth, "verify")
+    if not email:
+        return JSONResponse({"error": "Verification session expired."}, status_code=401)
+    user = store.get_user(email)
+    err = _send_verification_code(email, user["first_name"] if user else None)
+    if err:
+        return err
+    return {"ok": True}
 
 
 @app.post("/auth/login")
@@ -141,6 +232,12 @@ def login(body: Credentials, request: Request):
         body.password, user["password_hash"]
     ):
         return JSONResponse({"error": "Invalid email or password."}, status_code=401)
+    if not user["email_verified"]:
+        # Account created but never verified — send a fresh code and route there.
+        err = _send_verification_code(email, user["first_name"])
+        if err:
+            return err
+        return {"next": "verify_email", "preauth": security.issue_preauth(email, "verify"), "email": email}
     if user["totp_enabled"]:
         return {"next": "totp", "preauth": security.issue_preauth(email, "login")}
     return {"next": "totp_setup", "preauth": security.issue_preauth(email, "setup")}
@@ -574,7 +671,8 @@ def eval_live(request: Request, q: str = ""):
 def health():
     cat = get_catalog()
     return {"status": "ok", "products": len(cat.products),
-            "embed_mode": cat.embed_mode, "rerank_mode": cat.rerank_mode}
+            "embed_mode": cat.embed_mode, "rerank_mode": cat.rerank_mode,
+            "keyword_engine": cat.keyword_mode}
 
 
 @app.get("/config")

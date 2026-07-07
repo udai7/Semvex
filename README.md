@@ -6,8 +6,10 @@ also matches *intent* — so "sports sneakers" finds running shoes and "cheap ga
 laptop" understands budget and specs.
 
 It keeps the documented three-tier shape — **Next.js + TypeScript frontend /
-FastAPI ranking service / data layer** — but the ranking service runs the vector
-and keyword indexes in-process so it boots with **no external services**.
+FastAPI ranking service / data layer** — backed by **PostgreSQL + pgvector** as
+the single source of truth (users, analytics, products, embeddings). Keyword
+search runs on **Elasticsearch (BM25)** when configured, and transparently falls
+back to Postgres full-text (`tsvector`) when it isn't.
 
 ## Features
 
@@ -26,7 +28,8 @@ and keyword indexes in-process so it boots with **no external services**.
 - **Relevance feedback** (👍/👎) and click tracking feeding the analytics
 
 **Accounts & data**
-- Email + password with **TOTP 2-step verification** and one-time **backup codes**
+- Email + password signup with **email verification** (6-digit code over Gmail SMTP)
+- **TOTP 2-step verification** and one-time **backup codes**
 - Real **Google OAuth 2.0** (when configured)
 - **Favorites**, **recently viewed**, **saved searches**
 - **Rate limiting** on auth endpoints
@@ -39,6 +42,22 @@ and keyword indexes in-process so it boots with **no external services**.
 See [`docs/FEATURES.md`](./docs/FEATURES.md) for the full list mapped to endpoints and files.
 
 ## Quick start
+
+**0. Configure + data layer.** Copy `.env.example` to `.env` and set at least
+`DATABASE_URL` (managed Postgres like [Neon](https://neon.tech), or a local
+`pgvector/pgvector:pg16` container) and `SEMVEX_SECRET`. The pgvector extension
+is created automatically on first connect.
+
+```bash
+cp .env.example .env          # then edit DATABASE_URL + SEMVEX_SECRET
+# local Postgres option:
+docker run -d --name semvex-pg -p 5433:5432 \
+  -e POSTGRES_USER=semvex -e POSTGRES_PASSWORD=semvex -e POSTGRES_DB=semvex \
+  pgvector/pgvector:pg16
+```
+
+The 40-product sample catalog is auto-seeded on first boot. To load the real
+**Amazon ESCI** catalog at scale, see [Ingesting ESCI](#ingesting-the-amazon-esci-catalog).
 
 Two processes: the FastAPI ranking service (`:8000`) and the Next.js frontend
 (`:3000`). Run them in two terminals.
@@ -69,9 +88,11 @@ session cookie stays same-origin.
 
 1. **Landing** — clean hero explaining the three retrieval modes.
 2. **Sign in** — either:
-   - **Email + password**, followed by **2-step verification** (TOTP). New accounts
-     scan a QR code into Google Authenticator / Authy and confirm a 6-digit code
-     before they get a session. Returning users enter the code from their app.
+   - **Create account** — first/last name, phone, email, password (+ confirm) and
+     agreeing to terms. A **6-digit code is emailed** (Gmail SMTP) to verify the
+     address, then **2-step verification** (TOTP): scan a QR into Google
+     Authenticator / Authy and confirm a code before getting a session. Returning
+     users enter their password then the code from their app.
    - **Google OAuth** (real authorization-code flow; enabled when configured — see below).
 3. **Search app** — query box + example chips + a mode toggle. **Compare** mode shows
    keyword / semantic / hybrid results side by side with relevance scores.
@@ -79,9 +100,9 @@ session cookie stays same-origin.
 ## Architecture (as built)
 
 ```
-Next.js frontend (:3000)  ──▶  FastAPI service (:8000)  ──┬─▶ BM25 keyword index    (stands in for Elasticsearch)
-  landing / auth / 2FA         /auth/*  /search/*          ├─▶ dense-vector semantic (stands in for Supabase pgvector)
-  search comparison UI     (proxied same-origin via Next)  └─▶ RRF hybrid fusion
+Next.js frontend (:3000)  ──▶  FastAPI service (:8000)  ──┬─▶ Elasticsearch BM25   (or Postgres tsvector fallback)
+  landing / auth / 2FA         /auth/*  /search/*          ├─▶ pgvector cosine       (Postgres — semantic)
+  search comparison UI     (proxied same-origin via Next)  └─▶ RRF hybrid fusion (in-app)
 ```
 
 Mapping to the design docs:
@@ -89,25 +110,57 @@ Mapping to the design docs:
 | Doc component            | In this build |
 |--------------------------|---------------|
 | Ranking service (FastAPI)| `app/main.py`, `app/catalog.py` — same `/search/{keyword,semantic,hybrid}` contract |
-| Semantic (pgvector)      | in-process cosine over precomputed embeddings (`app/catalog.py`) |
-| Keyword (Elasticsearch)  | in-process BM25 (`app/catalog.py`) |
-| Hybrid ranking           | Reciprocal Rank Fusion |
+| Semantic (pgvector)      | Postgres pgvector cosine (`embedding <=> query`) over stored embeddings |
+| Keyword (Elasticsearch)  | Elasticsearch BM25 (`app/search_es.py`), Postgres `tsvector` fallback |
+| Hybrid ranking           | Reciprocal Rank Fusion (+ tunable α), fused in-app |
+| Data / storage           | `app/db.py`, `app/store.py` — Postgres is the single source of truth |
+| Ingestion                | `app/ingest.py` (sample), `app/ingest_esci.py` (Amazon ESCI at scale) |
 | Evaluation harness       | `eval/evaluate.py` — Recall@K / MRR / NDCG |
-| Frontend (Next.js + TS)  | `frontend/` — app-router pages: landing, `/signin`, `/twofa`, `/search` |
+| Frontend (Next.js + TS)  | `frontend/` — app-router: landing, `/signin`, `/verify-email`, `/twofa`, `/search` |
 | Frontend (no-Node option)| static SPA in `app/static/`, served by the backend at `:8000` |
 
 ### Embeddings
 
-If you install `sentence-transformers`, Semvex uses the PRD's model
-(`BAAI/bge-small-en-v1.5`) for true dense-vector semantic search:
+Semvex uses `BAAI/bge-small-en-v1.5` (384-d) for dense-vector semantic search.
+`SEMVEX_EMBEDDING_PROVIDER` picks how vectors are produced:
+
+| Provider | How | When |
+|----------|-----|------|
+| `local`  | `sentence-transformers` in-process (~2 GB RAM) | Bulk ingestion; single-box dev |
+| `hf`     | HuggingFace Inference API (needs `HF_API_TOKEN`, ~0 model RAM) | Low-RAM VPS serving live queries |
+| `hashing`| stateless signed feature-hashing (no model) | No-dependency fallback |
+| `auto`   | local → hf → hashing, first available | default |
+
+`local` and `hf` both run bge-small, so their 384-d vectors are interchangeable:
+**embed the catalog once locally, then serve live queries via HF** so no model
+sits in VPS RAM. The `/health` badge shows the active mode.
+
+### Elasticsearch (optional keyword engine)
+
+Set `ELASTICSEARCH_URL` to serve the BM25 keyword baseline from Elasticsearch;
+leave it blank to use Postgres `tsvector`. ES is a **pure ranker** — it returns
+ranked SKUs and product rows/vectors are always read back from Postgres, so
+there's one source of truth. If ES is configured but unreachable at query time,
+the app logs a warning and falls back to `tsvector`. `SEMVEX_KEYWORD_ENGINE`
+(`auto|elasticsearch|tsvector`) forces the choice.
+
+### Ingesting the Amazon ESCI catalog
+
+To move past the 40-product sample, load the **Amazon Shopping Queries (ESCI)**
+dataset — real Amazon products with relevance labels.
 
 ```bash
-pip install sentence-transformers   # optional, ~heavy
+pip install -r requirements-ingest.txt      # pyarrow + sentence-transformers
+# download shopping_queries_dataset_products.parquet from amazon-science/esci-data
+python -m app.ingest_esci --source /path/to/...products.parquet --limit 50000
 ```
 
-Without it, a **lexical + synonym-expansion fallback** keeps semantic search
-meaningfully different from keyword search so the comparison still lands. The UI
-badge shows which mode is active.
+The pipeline streams the Parquet in record batches (handles 50k–1M+ rows without
+loading it all into memory), normalizes each row, batch-embeds with the same
+model the API queries with, and upserts into pgvector **and** indexes into
+Elasticsearch (when configured). It's idempotent and resumable (`--offset`).
+ESCI has no price/category, so those are synthesized (deterministic price, coarse
+keyword category) — swappable in `app/ingest_esci.py`.
 
 ## Evaluation
 
@@ -124,21 +177,42 @@ labels power the **live NDCG overlay** in the search UI.
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest -q          # 15 tests: auth/2FA/backup-codes + search intelligence
+# tests run against Postgres — point at a throwaway DB (defaults to :5433):
+export SEMVEX_TEST_DATABASE_URL=postgresql://semvex:semvex@localhost:5433/semvex
+python -m pytest -q          # auth/2FA/backup-codes/email-verify + search intelligence
 ```
 
-GitHub Actions (`.github/workflows/ci.yml`) runs the pytest suite, the eval
-harness, and the Next.js build on every push/PR.
+The two "semantic beats keyword" quality tests are skipped unless real dense
+embeddings are available (they can't hold under the hashing fallback). GitHub
+Actions (`.github/workflows/ci.yml`) spins up a `pgvector` service and runs the
+pytest suite, the eval harness, and the Next.js build on every push/PR.
 
 ## Docker
 
 ```bash
-docker compose up --build     # frontend :3000, api :8000, elasticsearch :9200
+docker compose up --build     # postgres :5433, api :8000, frontend :3000, elasticsearch :9200
 ```
 
-`api` + `frontend` are enough to run the demo (indexes are in-process). The
-`elasticsearch` service is included to match `docs/production.md`'s documented
-BM25 topology for when you graduate off the in-process index.
+The compose stack runs Postgres+pgvector, the API, the frontend, and
+Elasticsearch. On a small VPS you can drop the `elasticsearch` service (keyword
+→ tsvector) and/or set `DATABASE_URL` to managed Postgres (e.g. Neon) instead of
+the bundled `postgres` service.
+
+## Email verification (Gmail SMTP)
+
+Signup emails a 6-digit code. Configure Gmail SMTP with an
+[App Password](https://myaccount.google.com/apppasswords) (needs 2FA on the
+Google account):
+
+```bash
+# backend env / .env
+SMTP_USER=you@gmail.com
+SMTP_APP_PASSWORD=your-16-char-app-password
+SMTP_FROM=Semvex <you@gmail.com>
+```
+
+If `SMTP_APP_PASSWORD` is blank, sending is disabled and the code is logged to
+the server console instead — so the flow still works locally.
 
 ## Admin analytics
 
@@ -181,13 +255,6 @@ own TOTP on top.
 
 ## Deferred (need live infra / models)
 
-Two items from the roadmap need external services or heavy models to *verify*, so
-they're scaffolded but not wired end-to-end:
-
-- **Live Elasticsearch + Supabase/pgvector swap** — `docker-compose.yml` includes
-  the ES service and the API reads `ELASTICSEARCH_URL`/`SUPABASE_*`, but the read
-  paths still use the in-process indexes. Swapping them is the `docs/production.md`
-  graduation step.
 - **Multimodal (CLIP) image search** — needs a CLIP model + real product images;
   current thumbnails are emoji/gradient placeholders.
 
@@ -195,15 +262,21 @@ they're scaffolded but not wired end-to-end:
 
 ```
 app/
-  main.py        FastAPI app: auth, 2FA, OAuth, search routes
-  catalog.py     BM25 + embeddings + RRF hybrid
-  security.py    password hashing, signed tokens, TOTP
-  store.py       SQLite user store
+  main.py        FastAPI app: auth, email-verify, 2FA, OAuth, search routes
+  catalog.py     embeddings (local/HF/hashing) + pgvector + ES/tsvector + RRF hybrid
+  search_es.py   Elasticsearch BM25 keyword engine (optional)
+  db.py          Postgres pool + schema (pgvector auto-bootstrap)
+  store.py       Postgres data access (users, accounts, analytics)
+  ingest.py      sample-catalog ingestion
+  ingest_esci.py streaming Amazon ESCI ingestion (pg + es)
+  email.py       Gmail SMTP sender (signup verification)
+  security.py    password hashing, signed tokens, TOTP, verification codes
   config.py      env-driven config
   static/        no-Node static SPA build of the UI
 frontend/            Next.js + TypeScript app (primary UI)
   app/page.tsx       landing
-  app/signin/        email+password / Google sign-in
+  app/signin/        create account / email+password / Google sign-in
+  app/verify-email/  6-digit email verification
   app/twofa/         2FA setup + verify
   app/search/        keyword / semantic / hybrid comparison
   lib/api.ts         typed client for the FastAPI service

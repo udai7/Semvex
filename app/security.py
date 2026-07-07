@@ -151,6 +151,20 @@ def hash_backup_code(code: str) -> str:
     return hashlib.sha256(normalized.encode()).hexdigest()
 
 
+# --------------------------------------------------------------------------- #
+# Email verification codes (6-digit, one-time)
+# --------------------------------------------------------------------------- #
+def generate_email_code() -> str:
+    import secrets
+
+    return f"{secrets.randbelow(10**6):06d}"
+
+
+def hash_email_code(code: str) -> str:
+    normalized = (code or "").strip().replace(" ", "")
+    return hashlib.sha256(normalized.encode()).hexdigest()
+
+
 def otpauth_uri(secret_b32: str, account: str) -> str:
     from urllib.parse import quote
 

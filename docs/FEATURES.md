@@ -5,7 +5,10 @@ Every feature added on top of the base three-mode search, with where it lives.
 ## Search intelligence
 | Feature | Endpoint(s) | Code |
 |---|---|---|
-| Keyword / semantic / hybrid | `/search/{keyword,semantic,hybrid}` | `catalog.py` `_keyword_scores` / `_semantic_scores` / `_hybrid_scores` |
+| Keyword / semantic / hybrid | `/search/{keyword,semantic,hybrid}` | `catalog.py` `_keyword_pool` / `_semantic_pool` / `_hybrid_fuse` |
+| Keyword engine: Elasticsearch (BM25) or Postgres tsvector | keyword/hybrid/compare | `search_es.py`, `catalog.py::_use_es` (auto-fallback) |
+| Embedding provider: local / HF API / hashing | all semantic | `catalog.py::Embedder` (`SEMVEX_EMBEDDING_PROVIDER`) |
+| ESCI catalog ingestion (streaming, pg + es) | `python -m app.ingest_esci` | `ingest_esci.py` |
 | Compare (all three at once) | `/search/compare` | `main.py::search_compare` |
 | Tunable α weighting | `?alpha=` on hybrid/compare | `catalog.py::_hybrid_scores` |
 | Cross-encoder reranking | `?rerank=true` | `catalog.py::Reranker` (fallback: lexical overlap) |
@@ -29,7 +32,8 @@ Every feature added on top of the base three-mode search, with where it lives.
 ## Accounts & auth
 | Feature | Endpoint(s) | Code |
 |---|---|---|
-| Email + password | `/auth/signup` `/auth/login` | `security.py` (PBKDF2) |
+| Email + password (name/phone/confirm/terms) | `/auth/signup` `/auth/login` | `security.py` (PBKDF2) |
+| Email verification (6-digit, Gmail SMTP) | `/auth/verify-email` `/auth/verify-email/resend` | `email.py`, `security.py::{generate,hash}_email_code`, `store.py::{store,check}_email_code` |
 | TOTP 2FA | `/auth/totp/{provision,enable,verify}` | `security.py` (RFC-6238) |
 | Backup codes | issued at enable, accepted at verify | `security.py::generate_backup_codes`, `store.py::consume_backup_code` |
 | Google OAuth | `/auth/google/{start,callback}` | `main.py` |
@@ -50,7 +54,8 @@ Every feature added on top of the base three-mode search, with where it lives.
 | Route | File |
 |---|---|
 | Landing | `frontend/app/page.tsx` |
-| Sign in / up | `frontend/app/signin/page.tsx` |
+| Sign in / create account | `frontend/app/signin/page.tsx` |
+| Email verification (6-digit) | `frontend/app/verify-email/page.tsx` |
 | 2FA setup/verify + backup codes | `frontend/app/twofa/page.tsx` |
 | Search (slider, toggles, filters, live metrics, feedback) | `frontend/app/search/page.tsx` |
 | Product detail + similar | `frontend/app/product/[sku]/page.tsx` |

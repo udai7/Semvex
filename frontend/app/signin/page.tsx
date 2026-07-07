@@ -9,8 +9,13 @@ type Mode = "signin" | "signup";
 export default function SignIn() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signin");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agree, setAgree] = useState(false);
   const [error, setError] = useState("");
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -26,11 +31,35 @@ export default function SignIn() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    if (mode === "signup") {
+      if (password !== confirmPassword) {
+        setError("Passwords do not match.");
+        return;
+      }
+      if (!agree) {
+        setError("You must agree to the Terms and Privacy Policy.");
+        return;
+      }
+    }
+
     setBusy(true);
     const path = mode === "signup" ? "/auth/signup" : "/auth/login";
+    const body =
+      mode === "signup"
+        ? {
+            first_name: firstName,
+            last_name: lastName,
+            phone,
+            email,
+            password,
+            confirm_password: confirmPassword,
+            agree_terms: agree,
+          }
+        : { email, password };
     const { ok, data } = await api(path, {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(body),
     });
     setBusy(false);
     if (!ok) {
@@ -38,6 +67,11 @@ export default function SignIn() {
       return;
     }
     sessionStorage.setItem("preauth", data.preauth);
+    if (data.next === "verify_email") {
+      sessionStorage.setItem("verifyEmail", data.email || email);
+      router.push("/verify-email");
+      return;
+    }
     sessionStorage.setItem("flow", data.next === "totp" ? "verify" : "setup");
     router.push("/twofa");
   }
@@ -84,11 +118,51 @@ export default function SignIn() {
         </div>
 
         <form className="auth-form" onSubmit={submit}>
+          {mode === "signup" && (
+            <>
+              <div className="grid2">
+                <label>
+                  First name
+                  <input
+                    type="text"
+                    required
+                    autoComplete="given-name"
+                    placeholder="Ada"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Last name
+                  <input
+                    type="text"
+                    required
+                    autoComplete="family-name"
+                    placeholder="Lovelace"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
+                </label>
+              </div>
+              <label>
+                Phone number
+                <input
+                  type="tel"
+                  required
+                  autoComplete="tel"
+                  placeholder="+1 555 123 4567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </label>
+            </>
+          )}
           <label>
             Email
             <input
               type="email"
               required
+              autoComplete="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -100,15 +174,41 @@ export default function SignIn() {
               type="password"
               required
               minLength={8}
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </label>
           {mode === "signup" && (
-            <p className="hint">
-              Minimum 8 characters. You’ll set up 2-step verification next.
-            </p>
+            <>
+              <label>
+                Confirm password
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </label>
+              <label className="checkbox-line">
+                <input
+                  type="checkbox"
+                  checked={agree}
+                  onChange={(e) => setAgree(e.target.checked)}
+                />
+                <span>
+                  I agree to the Terms and Privacy Policy.
+                </span>
+              </label>
+              <p className="hint">
+                Minimum 8 characters. We’ll email you a 6-digit code to verify
+                your address, then you’ll set up 2-step verification.
+              </p>
+            </>
           )}
           {error && (
             <p className="form-error" role="alert">

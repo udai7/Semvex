@@ -1,0 +1,9 @@
+# Dependencies for the offline ESCI ingestion pipeline (app/ingest_esci.py).
+# Not needed by the running API server — install only where you run ingestion.
+-r requirements.txt
+
+pyarrow>=15.0          # stream the ESCI products parquet in record batches
+
+# Real dense embeddings for the catalog (bge-small, 384-d). Install here so the
+# 50k+ products are embedded with the same model the API serves queries with.
+sentence-transformers>=2.7

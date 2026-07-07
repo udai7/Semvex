@@ -2,10 +2,22 @@
 fastapi>=0.110
 uvicorn[standard]>=0.29
 email-validator>=2.0  # validates the email field on sign-up / login
-qrcode>=7.4            # 2FA QR codes (rendered as SVG, no PIL needed)
+qrcode>=7.4           # 2FA QR codes (rendered as SVG, no PIL needed)
+python-dotenv>=1.0    # loads .env into the environment at startup
+
+# --- Data layer: PostgreSQL + pgvector (production source of truth) ---
+psycopg[binary]>=3.1
+psycopg_pool>=3.2
+pgvector>=0.3
+numpy>=1.26            # vector math for MMR diversity + fallback embeddings
+
+# --- Optional: Elasticsearch BM25 keyword engine ---
+# Enabled when ELASTICSEARCH_URL is set; otherwise keyword search uses Postgres
+# full-text (tsvector) and this import is never touched.
+elasticsearch>=8.0,<9        # pin to 8.x to match the ES 8.x server API
 
 # --- Optional: real semantic embeddings (matches PRD: BAAI/bge-small-en-v1.5) ---
-# The app runs without these using a lexical + synonym-expansion fallback.
-# Install to enable true dense-vector semantic search:
+# The app runs without these using a fixed-dim lexical + synonym-expansion
+# fallback embedder. Install to enable true dense-vector semantic search:
 #   pip install sentence-transformers
 # sentence-transformers>=2.7

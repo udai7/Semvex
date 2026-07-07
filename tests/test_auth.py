@@ -4,13 +4,60 @@ from app import security
 from .conftest import register_and_login
 
 
+def _signup_body(email="a@b.com", password="supersecret", **overrides):
+    body = {
+        "first_name": "Ada",
+        "last_name": "Lovelace",
+        "phone": "+15550000000",
+        "email": email,
+        "password": password,
+        "confirm_password": password,
+        "agree_terms": True,
+    }
+    body.update(overrides)
+    return body
+
+
 def test_search_requires_auth(client):
     assert client.get("/search/semantic?q=shoes").status_code == 401
 
 
 def test_signup_password_too_short(client):
-    r = client.post("/auth/signup", json={"email": "a@b.com", "password": "short"})
+    r = client.post("/auth/signup", json=_signup_body(password="short", confirm_password="short"))
     assert r.status_code == 400
+
+
+def test_signup_password_mismatch(client):
+    r = client.post("/auth/signup", json=_signup_body(confirm_password="different1"))
+    assert r.status_code == 400
+
+
+def test_signup_requires_agreement(client):
+    r = client.post("/auth/signup", json=_signup_body(agree_terms=False))
+    assert r.status_code == 400
+
+
+def test_email_verification_flow(client):
+    from app import security, store
+
+    r = client.post("/auth/signup", json=_signup_body(email="verify@test.com"))
+    assert r.status_code == 200 and r.json()["next"] == "verify_email"
+    preauth = r.json()["preauth"]
+
+    # Inject a known code (email delivery is disabled in tests).
+    store.store_email_code("verify@test.com", security.hash_email_code("123456"), 600)
+
+    bad = client.post("/auth/verify-email", json={"preauth": preauth, "code": "000000"})
+    assert bad.status_code == 401
+
+    ok = client.post("/auth/verify-email", json={"preauth": preauth, "code": "123456"})
+    assert ok.status_code == 200 and ok.json()["next"] == "totp_setup"
+
+
+def test_login_before_verification_routes_to_verify(client):
+    client.post("/auth/signup", json=_signup_body(email="pending@test.com"))
+    r = client.post("/auth/login", json={"email": "pending@test.com", "password": "supersecret"})
+    assert r.status_code == 200 and r.json()["next"] == "verify_email"
 
 
 def test_full_2fa_enrollment_and_session(client):

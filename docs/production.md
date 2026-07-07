@@ -54,27 +54,56 @@ volumes:
 
 Adjust ES version/heap once real container resource limits on the Coolify host are known — this is a starting point, not a benchmarked config.
 
+> **As-built note:** the managed Postgres provider is **Neon** (not Supabase) —
+> set `DATABASE_URL` directly. See `.env.example` for the complete, authoritative
+> list; the table below is the deployment-relevant subset.
+
 ## 4. Environment Variables
 
 | Variable | Used by | Purpose |
 |---|---|---|
-| `SUPABASE_URL` | API | Supabase project URL |
-| `SUPABASE_SERVICE_KEY` | API | Service-role key for pgvector writes/reads (ingestion + query) |
-| `ELASTICSEARCH_URL` | API | Internal Docker network URL to ES container |
-| `NEXT_PUBLIC_API_URL` | Frontend | Public URL of the FastAPI service |
-| `EMBEDDING_MODEL_NAME` | API + ingestion pipeline | `BAAI/bge-small-en-v1.5` (keep configurable, not hardcoded, in case of a later swap) |
+| `DATABASE_URL` | API + ingestion | **Required.** Managed Postgres+pgvector (Neon), or a self-hosted `pgvector` container. Extension auto-created on first connect. |
+| `SEMVEX_SECRET` | API | **Required.** Signs session cookies (keep stable across restarts). |
+| `ELASTICSEARCH_URL` | API + ingestion | ES BM25 engine. Blank → Postgres `tsvector` fallback. |
+| `ELASTICSEARCH_API_KEY` | API + ingestion | Only for secured/managed ES clusters. |
+| `SEMVEX_KEYWORD_ENGINE` | API | `auto`\|`elasticsearch`\|`tsvector`. |
+| `SEMVEX_EMBEDDING_PROVIDER` | API + ingestion | `auto`\|`local`\|`hf`\|`hashing`. VPS pattern: `hf` for the server. |
+| `HF_API_TOKEN` | API + ingestion | HuggingFace Inference API token when provider = `hf`. |
+| `EMBEDDING_MODEL_NAME` | API + ingestion | `BAAI/bge-small-en-v1.5` (384-d; ingest + query MUST match). |
+| `SMTP_USER` / `SMTP_APP_PASSWORD` / `SMTP_FROM` | API | Gmail SMTP for signup verification codes. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `SEMVEX_OAUTH_REDIRECT` | API | Optional Google OAuth. |
+| `SEMVEX_API_URL` | Frontend | Internal URL of the FastAPI service (Next proxy target). |
+
+### VPS sizing (self-hosted for a demo)
+
+RAM is the constraint, not traffic. The two heavy tenants are Elasticsearch
+(~1.5–2 GB) and, if used, a local embedding model (~1.5–2 GB with torch).
+
+| Stack | Approx. RAM | Notes |
+|---|---|---|
+| Neon + ES + HF query embeddings | **~3 GB → 4 GB VPS** | No model on the box; embed the catalog locally once. |
+| Neon + ES + local bge-small | **~5 GB → 8 GB VPS** | Best semantic quality, model resident. |
+| Neon + tsvector (no ES) + HF | **~1–1.5 GB → 2 GB VPS** | Cheapest; drops the ES story. |
+
+Keep Postgres on Neon (off the VPS). Ingestion is a one-time CPU spike; steady
+state is idle.
 
 ## 5. Ingestion / Indexing Runbook
 
-Ingestion is offline/batch, run manually or via a one-off script — not a scheduled job for this demo.
+Ingestion is offline/batch (`app/ingest_esci.py`), streaming and idempotent.
 
-1. Run cleaning script against raw Amazon Product Metadata + ESCI subset
-2. Run embedding batch job (writes to Postgres via Supabase client)
-3. Run ES bulk-index script (reads from Postgres, writes to Elasticsearch)
-4. Verify counts match between Postgres and ES (sanity check — same product count in both)
-5. Run evaluation harness to confirm Recall@K/MRR/NDCG numbers before considering ingestion "done"
+```bash
+pip install -r requirements-ingest.txt   # pyarrow + sentence-transformers
+# download shopping_queries_dataset_products.parquet (amazon-science/esci-data)
+python -m app.ingest_esci --source .../products.parquet --limit 50000
+```
 
-Re-running steps 1-3 should be idempotent — safe to blow away and rebuild both indexes from the cleaned dataset.
+1. Download the ESCI products parquet once.
+2. `python -m app.ingest_esci …` — streams batches, embeds (bge-small), upserts
+   pgvector **and** bulk-indexes Elasticsearch (when `ELASTICSEARCH_URL` set).
+3. `--target pg|es|both` and `--offset N` to resume; re-runs are idempotent
+   (upsert by SKU) — safe to rebuild either index from the source.
+4. `python -m eval.evaluate` to confirm Recall@K/MRR/NDCG before calling it done.
 
 ## 6. Health Checks / Monitoring
 
