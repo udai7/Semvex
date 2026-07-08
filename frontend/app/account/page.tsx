@@ -10,7 +10,7 @@ type Saved = { id: number; query: string; mode: string };
 function ProductGrid({ items, empty }: { items: Product[]; empty: string }) {
   if (!items.length) return <p className="no-results">{empty}</p>;
   return (
-    <div className="grid">
+    <div className="product-grid">
       {items.map((p) => (
         <Link key={p.sku} href={`/product/${p.sku}`} className="card" style={{ display: "block" }}>
           <div className="thumb" style={{ background: thumbGradient(p.sku) }}>{thumbEmoji(p)}</div>

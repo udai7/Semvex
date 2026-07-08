@@ -107,8 +107,7 @@ export function FrameContainer({
 }) {
   return (
     <div
-      className={cn("relative mx-auto w-full max-w-v2", className)}
-      style={{ paddingLeft: "var(--v2-grid-padding)", paddingRight: "var(--v2-grid-padding)" }}
+      className={cn("relative mx-auto w-full max-w-v2 v2-container-padded", className)}
     >
       {children}
     </div>
@@ -120,10 +119,12 @@ export function SectionEyebrow({
   children,
   className,
   align = "center",
+  textSize = "text-xs",
 }: {
   children: React.ReactNode;
   className?: string;
   align?: "left" | "center";
+  textSize?: string;
 }) {
   return (
     <div
@@ -136,9 +137,9 @@ export function SectionEyebrow({
       <span
         aria-hidden
         className="shrink-0 bg-v2-accent-green"
-        style={{ width: "1.7px", height: "13.5px" }}
+        style={{ width: "1.7px", height: "1.1em" }}
       />
-      <span className="font-mono text-xs uppercase tracking-[0.02em] text-v2-text-muted">
+      <span className={cn("font-mono uppercase tracking-[0.02em] text-v2-text-muted", textSize)}>
         {children}
       </span>
     </div>

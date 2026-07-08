@@ -61,7 +61,7 @@ export default function ProductPage() {
       </div>
 
       <h3 className="section-title">Similar products (vector kNN)</h3>
-      <div className="grid">
+      <div className="product-grid">
         {similar.map((s) => (
           <Link key={s.sku} href={`/product/${s.sku}`} className="card" style={{ display: "block" }}>
             <div className="thumb" style={{ background: thumbGradient(s.sku) }}>

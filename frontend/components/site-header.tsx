@@ -47,51 +47,49 @@ export default function SiteHeader() {
       <FrameHairline position="bottom" />
 
       <div
-        className="relative mx-auto h-14 max-w-v2"
-        style={{ paddingLeft: "var(--v2-grid-padding)", paddingRight: "var(--v2-grid-padding)" }}
+        className="relative mx-auto h-14 max-w-v2 v2-container-padded"
       >
         <div className="flex h-full items-center justify-between">
           <div className="flex items-center gap-10">
             <Logo />
-            {!authed && (
-              <nav className="hidden items-stretch gap-8 lg:flex" aria-label="Site links">
-                {[
-                  { href: "/features", label: "Features" },
-                  { href: "/how-it-works", label: "How it works" },
-                  { href: "/benchmarks", label: "Benchmarks" },
-                  { href: "/architecture", label: "Architecture" },
-                ].map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="group relative flex h-14 items-center text-sm text-v2-text-subtle transition-colors duration-150 hover:text-v2-text"
-                  >
-                    {item.label}
-                    <span className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-v2-text transition-transform duration-150 group-hover:scale-x-100" />
-                  </Link>
-                ))}
-              </nav>
-            )}
-            {authed && (
-              <nav className="hidden items-stretch gap-8 lg:flex">
-                {[
-                  { href: "/search", label: "Search" },
-                  { href: "/account", label: "Account" },
-                  ...(session?.is_admin ? [{ href: "/admin", label: "Admin" }] : []),
-                ].map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="group relative flex h-14 items-center text-sm text-v2-text-subtle transition-colors hover:text-v2-text"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            )}
+            <nav className="hidden items-stretch gap-8 lg:flex" aria-label="Site links">
+              {[
+                { href: "/features", label: "Features" },
+                { href: "/how-it-works", label: "How it works" },
+                { href: "/benchmarks", label: "Benchmarks" },
+                { href: "/architecture", label: "Architecture" },
+                ...(authed
+                  ? [
+                      { href: "/search", label: "Search" },
+                      { href: "/account", label: "Account" },
+                      ...(session?.is_admin ? [{ href: "/admin", label: "Admin" }] : []),
+                    ]
+                  : []),
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="group relative flex h-14 items-center text-sm text-v2-text-subtle transition-colors duration-150 hover:text-v2-text"
+                >
+                  {item.label}
+                  <span className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-v2-text transition-transform duration-150 group-hover:scale-x-100" />
+                </Link>
+              ))}
+            </nav>
           </div>
 
           <div className="flex items-center gap-3">
+            <a
+              href="https://github.com/udai7/Semvex"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:block"
+            >
+              <Button variant="outline" size="sm">
+                Star the Repo
+              </Button>
+            </a>
+
             {authed ? (
               <>
                 <span className="hidden text-xs text-v2-text-muted sm:inline">{session?.email}</span>
