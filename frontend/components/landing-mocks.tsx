@@ -62,7 +62,7 @@ export function ProductBlock({
   tone?: "lime" | "amber" | "graphite";
 }) {
   return (
-    <div className={`v2-bleed v2-product-split ${flip ? "v2-product-split--flip" : ""}`}>
+    <div className={`v2-product-split ${flip ? "v2-product-split--flip" : ""}`}>
       <div className="v2-product-copy flex flex-col justify-center">
         <SectionEyebrow align="left">{eyebrow}</SectionEyebrow>
         <h3 className="text-balance text-2xl font-medium leading-tight tracking-tight md:text-[1.75rem]">
@@ -520,14 +520,14 @@ export function QuoteGrid() {
   const row2 = [...QUOTES.slice(3, 6), ...QUOTES.slice(3, 6)];
 
   return (
-    <div className="v2-bleed v2-marquee-container">
+    <div className="v2-marquee-container">
       {/* Top Row: Scrolls Left */}
       <div className="v2-marquee-row">
         <div className="v2-marquee-content-left">
           {row1.map((q, idx) => (
             <div
               key={`row1-${idx}`}
-              className="v2-cell flex w-[400px] shrink-0 flex-col gap-4 border-r border-b border-v2-border bg-v2-bg"
+              className="v2-cell flex w-[min(400px,85vw)] shrink-0 flex-col gap-4 border-r border-b border-v2-border bg-v2-bg"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3">
@@ -561,7 +561,7 @@ export function QuoteGrid() {
           {row2.map((q, idx) => (
             <div
               key={`row2-${idx}`}
-              className="v2-cell flex w-[400px] shrink-0 flex-col gap-4 border-r border-v2-border bg-v2-bg"
+              className="v2-cell flex w-[min(400px,85vw)] shrink-0 flex-col gap-4 border-r border-v2-border bg-v2-bg"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3">

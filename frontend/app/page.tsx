@@ -114,7 +114,7 @@ function CompareMock() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 divide-x divide-[#2d3139]">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#2d3139]">
         {COMPARE_COLS.map((col) => (
           <div
             key={col.name}
@@ -173,7 +173,7 @@ function HeroVisual() {
         <span className="text-v2-text-muted">RRF · α 0.55</span>
       </div>
 
-      <div className="relative z-40 v2-bleed">
+      <div className="relative z-40">
         {/* dashed technical guides */}
         <div aria-hidden className="pointer-events-none absolute inset-x-[-100vw] top-0 border-t border-dashed border-[#2d3139]/40 z-0 hidden md:block" />
         <div aria-hidden className="pointer-events-none absolute inset-x-[-100vw] bottom-0 border-t border-dashed border-[#2d3139]/40 z-0 hidden md:block" />
@@ -304,10 +304,10 @@ export default function Landing() {
     <main className="v2-page">
       {/* Hero — left-aligned heading, split copy/CTA row, framed compare card below */}
       <FrameSection hairline="bottom">
-        <FrameContainer className="pt-16 md:pt-24 pb-0">
+        <FrameContainer className="pt-16 md:pt-24 pb-12 md:pb-20">
           <SectionEyebrow align="left">Semantic + keyword retrieval, side by side</SectionEyebrow>
 
-          <h1 className="max-w-none text-display-lg font-medium leading-[1.04] tracking-tight md:whitespace-nowrap">
+          <h1 className="max-w-none text-display-lg font-medium leading-[1.04] tracking-tight">
             Search that understands <Highlight>what shoppers mean</Highlight>.
           </h1>
 
@@ -316,7 +316,7 @@ export default function Landing() {
               Keyword search matches strings. Semvex matches intent — compare BM25,
               dense-vector, and hybrid ranking on one query.
             </p>
-            <div className="flex shrink-0 items-center gap-3">
+            <div className="flex shrink-0 flex-wrap items-center gap-3">
               <Link href="/signin">
                 <Button size="lg">
                   Try the demo <ArrowRight />
@@ -347,7 +347,7 @@ export default function Landing() {
       <FrameSection hairline="bottom">
         <div className="py-8">
           <FrameContainer>
-            <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-6">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 sm:justify-between sm:gap-x-8 sm:gap-y-6">
               {["Postgres", "pgvector", "Elasticsearch", "HuggingFace", "Next.js", "Docker"].map(
                 (name) => (
                   <span
@@ -581,7 +581,7 @@ export default function Landing() {
             sub="Offline scores on the curated electronics + shoes catalog with human relevance labels."
           />
 
-          <div className="v2-bleed v2-grid-4 border-b border-v2-border mt-12 md:mt-14">
+          <div className="v2-grid-4 border-b border-v2-border mt-12 md:mt-14">
             {METRICS.map((m) => (
               <div key={m.l} className="v2-cell">
                 <div className="font-mono text-3xl font-semibold tracking-tight tabular-nums">{m.k}</div>
