@@ -15,6 +15,14 @@ export default function TwoFactor() {
   const [busy, setBusy] = useState(false);
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
 
+  // Send the user back to where they were headed before hitting the auth gate.
+  function finishAuth() {
+    const next = sessionStorage.getItem("postauth_next");
+    sessionStorage.removeItem("postauth_next");
+    const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : "/search";
+    router.push(dest);
+  }
+
   useEffect(() => {
     const pre = sessionStorage.getItem("preauth");
     const f = sessionStorage.getItem("flow") as "setup" | "verify" | null;
@@ -60,7 +68,7 @@ export default function TwoFactor() {
       setBackupCodes(data.backup_codes);
       return;
     }
-    router.push("/search");
+    finishAuth();
   }
 
   if (backupCodes) {
@@ -79,7 +87,7 @@ export default function TwoFactor() {
               ))}
             </div>
           </div>
-          <button className="btn btn-primary" onClick={() => router.push("/search")}>
+          <button className="btn btn-primary" onClick={finishAuth}>
             I’ve saved them — continue
           </button>
         </div>

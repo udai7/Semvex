@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api, Session } from "@/lib/api";
+import { FrameHairline } from "@/components/frame";
 import { Button } from "@/components/ui/button";
+import { api, Session } from "@/lib/api";
 
 function Logo() {
   return (
-    <Link href="/" className="group flex items-center gap-2">
-      <span className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground text-[15px] font-bold shadow-sm">
+    <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Semvex home">
+      <span className="grid size-7 place-items-center bg-v2-text text-xs font-bold text-v2-bg">
         S
       </span>
-      <span className="text-[17px] font-semibold tracking-tight">Semvex</span>
+      <span className="text-[17px] font-semibold tracking-tight text-v2-text">Semvex</span>
     </Link>
   );
 }
@@ -42,60 +43,75 @@ export default function SiteHeader() {
   const authed = session?.authenticated;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-8">
-          <Logo />
-          {!authed && (
-            <nav className="hidden items-center gap-6 md:flex">
-              <a href="/#how" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                How it works
-              </a>
-              <a href="/#features" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                Features
-              </a>
-              <a href="/#metrics" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                Benchmarks
-              </a>
-            </nav>
-          )}
-          {authed && (
-            <nav className="hidden items-center gap-6 md:flex">
-              <Link href="/search" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                Search
-              </Link>
-              <Link href="/account" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                Account
-              </Link>
-              {session?.is_admin && (
-                <Link href="/admin" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                  Admin
-                </Link>
-              )}
-            </nav>
-          )}
-        </div>
+    <header className="sticky top-0 z-50 bg-v2-bg">
+      <FrameHairline position="bottom" />
 
-        <div className="flex items-center gap-3">
-          {authed ? (
-            <>
-              <span className="hidden rounded-full border border-border bg-secondary px-3 py-1 text-xs text-muted-foreground sm:inline">
-                {session?.email}
-              </span>
-              <Button variant="ghost" size="sm" onClick={signOut}>
-                Sign out
-              </Button>
-            </>
-          ) : (
-            <>
-              <Link href="/signin" className="hidden sm:block">
-                <Button variant="ghost" size="sm">Sign in</Button>
-              </Link>
-              <Link href="/signin">
-                <Button size="sm">Try the demo</Button>
-              </Link>
-            </>
-          )}
+      <div
+        className="relative mx-auto h-14 max-w-v2"
+        style={{ paddingLeft: "var(--v2-grid-padding)", paddingRight: "var(--v2-grid-padding)" }}
+      >
+        <div className="flex h-full items-center justify-between">
+          <div className="flex items-center gap-10">
+            <Logo />
+            {!authed && (
+              <nav className="hidden items-stretch gap-8 lg:flex" aria-label="Site links">
+                {[
+                  { href: "/features", label: "Features" },
+                  { href: "/how-it-works", label: "How it works" },
+                  { href: "/benchmarks", label: "Benchmarks" },
+                  { href: "/architecture", label: "Architecture" },
+                ].map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="group relative flex h-14 items-center text-sm text-v2-text-subtle transition-colors duration-150 hover:text-v2-text"
+                  >
+                    {item.label}
+                    <span className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-v2-text transition-transform duration-150 group-hover:scale-x-100" />
+                  </Link>
+                ))}
+              </nav>
+            )}
+            {authed && (
+              <nav className="hidden items-stretch gap-8 lg:flex">
+                {[
+                  { href: "/search", label: "Search" },
+                  { href: "/account", label: "Account" },
+                  ...(session?.is_admin ? [{ href: "/admin", label: "Admin" }] : []),
+                ].map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="group relative flex h-14 items-center text-sm text-v2-text-subtle transition-colors hover:text-v2-text"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            {authed ? (
+              <>
+                <span className="hidden text-xs text-v2-text-muted sm:inline">{session?.email}</span>
+                <Button variant="ghost" size="sm" onClick={signOut}>
+                  Sign out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/signin" className="hidden sm:block">
+                  <Button variant="outline" size="sm">
+                    Sign in
+                  </Button>
+                </Link>
+                <Link href="/signin">
+                  <Button size="sm">Try the demo</Button>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </header>

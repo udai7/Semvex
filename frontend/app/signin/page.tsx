@@ -22,9 +22,17 @@ export default function SignIn() {
 
   useEffect(() => {
     api("/config").then(({ data }) => setGoogleEnabled(!!data.google_enabled));
-    // Surface an error if we bounced back from a failed Google OAuth attempt.
-    if (typeof window !== "undefined" && window.location.hash.startsWith("#error")) {
-      setError("Google sign-in failed. Please try again.");
+    if (typeof window !== "undefined") {
+      // Surface an error if we bounced back from a failed Google OAuth attempt.
+      if (window.location.hash.startsWith("#error")) {
+        setError("Google sign-in failed. Please try again.");
+      }
+      // Remember where the user was headed (set by middleware) so we can send
+      // them back after the auth flow completes. Only accept internal paths.
+      const next = new URLSearchParams(window.location.search).get("next");
+      if (next && next.startsWith("/") && !next.startsWith("//")) {
+        sessionStorage.setItem("postauth_next", next);
+      }
     }
   }, []);
 

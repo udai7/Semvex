@@ -2,22 +2,35 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+/** Infisical marketing v2-btn + OSS v3 tint variants. */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 active:translate-y-px [&_svg]:size-4 [&_svg]:shrink-0",
+  [
+    "v2-btn inline-flex min-h-[44px] items-center justify-center gap-1.5",
+    "font-sans text-sm font-medium whitespace-nowrap select-none border",
+    "transition-[color,background-color,border-color,transform] duration-150 ease-out",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-text/20",
+    "active:scale-[0.97] motion-reduce:transform-none",
+    "disabled:pointer-events-none disabled:opacity-50",
+    "[&_svg]:size-4 [&_svg]:shrink-0",
+  ].join(" "),
   {
     variants: {
       variant: {
-        primary:
-          "bg-primary text-primary-foreground shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_8px_20px_-8px_hsl(var(--primary)/0.6)] hover:brightness-[1.04] hover:shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_10px_28px_-8px_hsl(var(--primary)/0.7)]",
+        /** Primary CTA — black fill, white label (infisical.com) */
+        primary: "bg-v2-text text-v2-bg border-v2-text hover:bg-v2-void",
+        /** Secondary — bordered ghost */
         outline:
-          "border border-border bg-card text-foreground hover:bg-secondary hover:border-foreground/20",
-        ghost: "text-muted-foreground hover:bg-secondary hover:text-foreground",
-        subtle: "bg-secondary text-secondary-foreground hover:bg-muted",
+          "bg-transparent text-v2-text-subtle border-v2-border hover:text-v2-text focus-visible:text-v2-text",
+        ghost: "bg-transparent text-v2-text border-transparent hover:text-v2-text-subtle",
+        /** Infisical v3 project tint (lime) */
+        project:
+          "border-project/25 bg-project/10 text-v2-text hover:bg-project/15 hover:border-project/30",
+        link: "min-h-0 border-none bg-transparent p-0 text-v2-text-subtle underline-offset-4 hover:text-v2-text hover:underline active:scale-100",
       },
       size: {
-        sm: "h-9 px-3.5",
-        md: "h-10 px-4.5",
-        lg: "h-12 px-6 text-[15px]",
+        sm: "px-3 py-1.5 text-xs min-h-9",
+        md: "px-4 py-2 text-sm",
+        lg: "px-5 py-2.5 text-sm",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },

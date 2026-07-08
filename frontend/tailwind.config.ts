@@ -1,92 +1,89 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: "class",
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
     "./lib/**/*.{ts,tsx}",
   ],
   theme: {
-    container: {
-      center: true,
-      padding: "1.5rem",
-      screens: { "2xl": "1200px" },
-    },
     extend: {
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
+        sans: ["var(--font-sans)", "Hanken Grotesk", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "JetBrains Mono", "ui-monospace", "monospace"],
       },
       colors: {
-        border: "hsl(var(--border) / <alpha-value>)",
-        input: "hsl(var(--input) / <alpha-value>)",
-        ring: "hsl(var(--ring) / <alpha-value>)",
-        background: "hsl(var(--background) / <alpha-value>)",
-        foreground: "hsl(var(--foreground) / <alpha-value>)",
+        /* Infisical marketing (light) + OSS semantic tokens */
+        v2: {
+          bg: "var(--v2-color-bg)",
+          "bg-page": "var(--v2-color-bg-page)",
+          text: "var(--v2-color-text)",
+          "text-muted": "var(--v2-color-text-muted)",
+          "text-subtle": "var(--v2-color-text-subtle)",
+          border: "var(--v2-color-border)",
+          frame: "var(--v2-color-frame)",
+          tint: "var(--v2-color-tint)",
+          "tint-strong": "var(--v2-color-tint-strong)",
+          void: "var(--v2-color-void)",
+          volt: "var(--v2-color-volt)",
+          lime: "var(--v2-color-accent-lime)",
+          "accent-green": "var(--v2-color-accent-green)",
+        },
+        project: {
+          DEFAULT: "#e0ed34",
+          foreground: "#000000",
+        },
+        /* shadcn-compat aliases for any remaining refs */
+        border: "var(--v2-color-border)",
+        background: "var(--v2-color-bg)",
+        foreground: "var(--v2-color-text)",
         primary: {
-          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
-          foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
+          DEFAULT: "var(--v2-color-text)",
+          foreground: "var(--v2-color-bg)",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
-          foreground: "hsl(var(--secondary-foreground) / <alpha-value>)",
+          DEFAULT: "var(--v2-color-tint-strong)",
+          foreground: "var(--v2-color-text)",
         },
         muted: {
-          DEFAULT: "hsl(var(--muted) / <alpha-value>)",
-          foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
+          DEFAULT: "var(--v2-color-tint-strong)",
+          foreground: "var(--v2-color-text-muted)",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent) / <alpha-value>)",
-          foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
+          DEFAULT: "var(--v2-color-accent-lime)",
+          foreground: "var(--v2-color-text)",
         },
         card: {
-          DEFAULT: "hsl(var(--card) / <alpha-value>)",
-          foreground: "hsl(var(--card-foreground) / <alpha-value>)",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
-          foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",
+          DEFAULT: "var(--v2-color-bg)",
+          foreground: "var(--v2-color-text)",
         },
       },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+      maxWidth: {
+        v2: "var(--v2-max-width)",
       },
       fontSize: {
-        // tightened display scale for confident headlines
-        "display-lg": ["clamp(2.75rem, 6vw, 4.5rem)", { lineHeight: "1.02", letterSpacing: "-0.03em" }],
-        "display": ["clamp(2.25rem, 4.5vw, 3.25rem)", { lineHeight: "1.05", letterSpacing: "-0.025em" }],
-        "title": ["1.5rem", { lineHeight: "1.2", letterSpacing: "-0.015em" }],
+        "display-lg": [
+          "clamp(2.25rem, 5.5vw, 3.5rem)",
+          { lineHeight: "1.08", letterSpacing: "-0.03em", fontWeight: "500" },
+        ],
+        display: [
+          "clamp(1.75rem, 4vw, 2.25rem)",
+          { lineHeight: "1.1", letterSpacing: "-0.025em", fontWeight: "500" },
+        ],
+        title: ["1.125rem", { lineHeight: "1.2", letterSpacing: "-0.01em" }],
       },
       keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
         "fade-up": {
           from: { opacity: "0", transform: "translateY(12px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
-        "fade-in": {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
-        },
       },
       animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
         "fade-up": "fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both",
-        "fade-in": "fade-in 0.5s ease-out both",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [],
 };
 
 export default config;

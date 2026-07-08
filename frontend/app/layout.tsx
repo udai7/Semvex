@@ -1,9 +1,25 @@
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { FrameRails } from "@/components/frame";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
+import FooterSlot from "@/components/footer-slot";
+
+// Primary grotesque (close free stand-in for Infisical's "Alliance No.2").
+const sans = Hanken_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+// Secondary monospace — Infisical uses JetBrains Mono for eyebrows, tags, numbers.
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Semvex — Semantic Product Search",
@@ -16,11 +32,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body className="font-sans">
-        <SiteHeader />
-        {children}
-        <SiteFooter />
+    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+      <body className="font-sans antialiased">
+        <div className="relative min-h-screen bg-v2-bg">
+          <FrameRails />
+          <SiteHeader />
+          {children}
+          <FooterSlot>
+            <SiteFooter />
+          </FooterSlot>
+        </div>
       </body>
     </html>
   );
