@@ -21,12 +21,33 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
+// Set NEXT_PUBLIC_SITE_URL to your deployed origin in production so shared-link
+// (OpenGraph/Twitter) image URLs resolve absolutely. Falls back to localhost in dev.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const OG_DESC =
+  "Search that understands what shoppers mean — compare keyword (BM25), dense-vector, and hybrid (RRF) retrieval side by side on ~25k real products.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Semvex — Semantic Product Search",
-  description:
-    "Search that understands what shoppers mean. Compare keyword (BM25), dense-vector, and hybrid (RRF) retrieval side by side.",
+  description: OG_DESC,
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔎</text></svg>",
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "Semvex",
+    title: "Semvex — Semantic Product Search",
+    description: OG_DESC,
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Semvex — Semantic Product Search" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Semvex — Semantic Product Search",
+    description: OG_DESC,
+    images: ["/og.png"],
   },
 };
 

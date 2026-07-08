@@ -1,0 +1,59 @@
+# Production stack for semvex.archilect.in.
+#
+# Deployed behind the host's existing Coolify-managed Traefik (external network
+# `coolify`, TLS via the `letsencrypt` resolver) — additive, mirrors how the
+# other apps on this box are routed. Reuses managed Postgres (Neon) via
+# DATABASE_URL and the HuggingFace Inference API for query embeddings, so no
+# local Postgres, Elasticsearch, or embedding model is needed here.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    env_file: .env
+    environment:
+      - SEMVEX_POST_LOGIN_REDIRECT=/search
+      - SEMVEX_LOGIN_ERROR_REDIRECT=/signin#error
+    restart: unless-stopped
+    networks:
+      - internal
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: "https://semvex.archilect.in"
+        SEMVEX_API_URL: "http://api:8000"
+    environment:
+      - SEMVEX_API_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - internal
+      - coolify
+    expose:
+      - "3000"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - "traefik.http.routers.semvex-http.entrypoints=http"
+      - "traefik.http.routers.semvex-http.rule=Host(`semvex.archilect.in`)"
+      - traefik.http.routers.semvex-http.middlewares=semvex-redirect
+      - traefik.http.middlewares.semvex-redirect.redirectscheme.scheme=https
+      - "traefik.http.routers.semvex-https.entrypoints=https"
+      - "traefik.http.routers.semvex-https.rule=Host(`semvex.archilect.in`)"
+      - traefik.http.routers.semvex-https.tls=true
+      - traefik.http.routers.semvex-https.tls.certresolver=letsencrypt
+      - traefik.http.services.semvex.loadbalancer.server.port=3000
+
+networks:
+  internal:
+    driver: bridge
+  coolify:
+    external: true

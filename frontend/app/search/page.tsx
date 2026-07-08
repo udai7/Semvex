@@ -5,20 +5,26 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api,
+  embedLabel,
+  Health,
+  keywordLabel,
   LiveMetrics,
   Product,
+  rerankLabel,
   SearchMode,
   thumbEmoji,
   thumbGradient,
 } from "@/lib/api";
 
+// Verified against the 25k ESCI catalog — each returns strong, on-topic
+// semantic matches, chosen to show breadth across categories.
 const EXAMPLES = [
-  "sports sneakers",
-  "cheap gaming laptop",
-  "waterproof shoes for the mountains",
-  "wireless earphones for running",
-  "warm footwear for snow",
-  "laptop under 300",
+  "wireless noise cancelling headphones",
+  "waterproof jacket for cold rainy hikes",
+  "running shoes for a marathon",
+  "cozy blanket for winter",
+  "dog leash for large dogs",
+  "board game for family night",
 ];
 
 type Facets = {
@@ -42,6 +48,7 @@ export default function SearchPage() {
   const [maxPrice, setMaxPrice] = useState("");
 
   // data
+  const [health, setHealth] = useState<Health | null>(null);
   const [facets, setFacets] = useState<Facets | null>(null);
   const [resp, setResp] = useState<any>(null);
   const [single, setSingle] = useState<Product[] | null>(null);
@@ -64,6 +71,7 @@ export default function SearchPage() {
       if (q) { setQuery(q); run(q); }
     });
     api<Facets>("/facets").then(({ data }) => setFacets(data));
+    api<Health>("/health").then(({ data }) => setHealth(data));
     api<{ favorites: Product[] }>("/me/favorites").then(({ data }) =>
       setFavorites(new Set((data.favorites || []).map((p) => p.sku)))
     );
@@ -260,6 +268,44 @@ export default function SearchPage() {
         ))}
       </div>
 
+      {/* catalog / dataset disclaimer */}
+      <p className="catalog-note">
+        Demo catalog: ~25,000 products sampled from the{" "}
+        <a
+          href="https://github.com/amazon-science/esci-data"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Amazon ESCI (Shopping Queries) dataset
+        </a>
+        . A specific item — say a named brand like “iPhone” — may not be in the
+        catalog. Semantic search always returns the <em>closest</em> matches, so
+        some results can look only loosely related when the exact product isn’t
+        present.
+      </p>
+
+      {/* live engine/provider status — what's actually serving this search */}
+      {health && (
+        <div className="engine-status" title="Live engine configuration from /health">
+          <span className="engine-pill">
+            <span className="engine-k">products</span>
+            <b>{health.products.toLocaleString()}</b>
+          </span>
+          <span className={`engine-pill ${embedLabel(health.embed_mode).dense ? "on" : "warn"}`}>
+            <span className="engine-k">semantic</span>
+            <b>{embedLabel(health.embed_mode).text}</b>
+          </span>
+          <span className={`engine-pill ${health.keyword_engine === "elasticsearch" ? "on" : ""}`}>
+            <span className="engine-k">keyword</span>
+            <b>{keywordLabel(health.keyword_engine)}</b>
+          </span>
+          <span className={`engine-pill ${rerankLabel(health.rerank_mode).active ? "on" : ""}`}>
+            <span className="engine-k">rerank</span>
+            <b>{rerankLabel(health.rerank_mode).text}</b>
+          </span>
+        </div>
+      )}
+
       {/* mode + intelligence controls */}
       <div className="controls">
         <div className="mode-toggle">
@@ -349,12 +395,16 @@ export default function SearchPage() {
       {submitted && resp && (
         <div className="meta-row">
           <span className="badge">
-            embeddings:{" "}
-            <b>{resp.embed_mode?.startsWith("dense") ? resp.embed_mode.replace("dense:", "") : "lexical fallback"}</b>
+            embeddings: <b>{embedLabel(resp.embed_mode).text}</b>
           </span>
+          {resp.keyword_engine && (mode === "keyword" || mode === "hybrid" || mode === "compare") && (
+            <span className="badge">
+              keyword: <b>{keywordLabel(resp.keyword_engine)}</b>
+            </span>
+          )}
           {rerank && (
             <span className="badge">
-              rerank: <b>{resp.rerank_mode?.startsWith("cross") ? "cross-encoder" : "lexical fallback"}</b>
+              rerank: <b>{rerankLabel(resp.rerank_mode).text}</b>
             </span>
           )}
           {typeof resp.took_ms === "number" && (

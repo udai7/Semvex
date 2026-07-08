@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { api, apiError } from "@/lib/api";
 
 export default function TwoFactor() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function TwoFactor() {
         method: "POST",
         body: JSON.stringify({ preauth: pre }),
       }).then(({ ok, data }) => {
-        if (!ok) setError(data.error || "Could not start 2FA setup.");
+        if (!ok) setError(apiError(data, "Could not start 2FA setup."));
         else {
           setQrSvg(data.qr_svg);
           setSecret(data.secret);
@@ -58,7 +58,7 @@ export default function TwoFactor() {
     });
     setBusy(false);
     if (!ok) {
-      setError(data.error || "Verification failed.");
+      setError(apiError(data, "Verification failed."));
       return;
     }
     sessionStorage.removeItem("preauth");

@@ -16,30 +16,44 @@ import sys
 from . import config, db
 from .catalog import Embedder, doc_text
 
-_UPSERT = """
-INSERT INTO products (sku, title, brand, category, price, description, embedding, search_tsv)
-VALUES (%(sku)s, %(title)s, %(brand)s, %(category)s, %(price)s, %(description)s, %(embedding)s,
-        setweight(to_tsvector('english', %(a)s), 'A') ||
-        setweight(to_tsvector('english', %(b)s), 'B') ||
-        setweight(to_tsvector('english', %(c)s), 'C'))
-ON CONFLICT (sku) DO UPDATE SET
-    title = EXCLUDED.title, brand = EXCLUDED.brand, category = EXCLUDED.category,
-    price = EXCLUDED.price, description = EXCLUDED.description,
-    embedding = EXCLUDED.embedding, search_tsv = EXCLUDED.search_tsv;
-"""
+# One VALUES tuple per product. `search_tsv` is a weighted tsvector built from
+# (title+brand)=A, description=B, (category+brand)=C for keyword ranking.
+_VALUES_TUPLE = (
+    "(%s, %s, %s, %s, %s, %s, %s, "
+    "setweight(to_tsvector('english', %s), 'A') || "
+    "setweight(to_tsvector('english', %s), 'B') || "
+    "setweight(to_tsvector('english', %s), 'C'))"
+)
+_UPSERT_HEAD = (
+    "INSERT INTO products "
+    "(sku, title, brand, category, price, description, embedding, search_tsv) VALUES "
+)
+_UPSERT_TAIL = (
+    " ON CONFLICT (sku) DO UPDATE SET "
+    "title = EXCLUDED.title, brand = EXCLUDED.brand, category = EXCLUDED.category, "
+    "price = EXCLUDED.price, description = EXCLUDED.description, "
+    "embedding = EXCLUDED.embedding, search_tsv = EXCLUDED.search_tsv"
+)
 
 
 def upsert_batch(c, products: list[dict], embeddings) -> None:
-    """Upsert a batch of product dicts (+ their embeddings) into Postgres.
-    Shared by the demo seed (`ingest`) and the ESCI pipeline (`ingest_esci`)."""
-    for p, emb in zip(products, embeddings):
-        c.execute(_UPSERT, {
-            **p,
-            "embedding": emb,
-            "a": f"{p['title']} {p['brand']}",
-            "b": p["description"],
-            "c": f"{p['category']} {p['brand']}",
-        })
+    """Upsert a batch of product dicts (+ their embeddings) into Postgres in a
+    single multi-row statement. Shared by the demo seed (`ingest`) and the ESCI
+    pipeline (`ingest_esci`). One statement per batch keeps round-trips to a
+    remote DB (e.g. Neon) to one per batch instead of one per row — the
+    difference between minutes and seconds at 25k+ rows."""
+    rows = list(zip(products, embeddings))
+    if not rows:
+        return
+    params: list = []
+    for p, emb in rows:
+        params += [
+            p["sku"], p["title"], p["brand"], p["category"], p["price"], p["description"],
+            emb,
+            f"{p['title']} {p['brand']}", p["description"], f"{p['category']} {p['brand']}",
+        ]
+    sql = _UPSERT_HEAD + ", ".join([_VALUES_TUPLE] * len(rows)) + _UPSERT_TAIL
+    c.execute(sql, params)
 
 
 def ingest() -> int:

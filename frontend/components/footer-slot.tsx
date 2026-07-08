@@ -2,8 +2,9 @@
 
 import { usePathname } from "next/navigation";
 
-// Auth-flow screens render without the marketing footer.
-const HIDE_ON = ["/signin", "/twofa", "/verify-email"];
+// Auth-flow screens and the logged-in app/dashboard views render without the
+// marketing footer.
+const HIDE_ON = ["/signin", "/twofa", "/verify-email", "/search", "/account", "/admin"];
 
 export default function FooterSlot({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

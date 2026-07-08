@@ -20,6 +20,34 @@ export async function api<T = any>(
   return { ok: res.ok, status: res.status, data };
 }
 
+// Turn a failed API response body into a human-readable message.
+// Handles our own `{ error }` responses, FastAPI string `{ detail }`, and
+// FastAPI/Pydantic validation arrays `{ detail: [{ loc, msg }] }` (e.g. an
+// invalid email) — which would otherwise show as a generic fallback.
+export function apiError(
+  data: any,
+  fallback = "Something went wrong. Please try again."
+): string {
+  if (!data) return fallback;
+  if (typeof data.error === "string" && data.error) return data.error;
+
+  const detail = data.detail;
+  if (typeof detail === "string" && detail) return detail;
+
+  if (Array.isArray(detail) && detail.length) {
+    const first = detail[0] || {};
+    const loc = Array.isArray(first.loc) ? first.loc[first.loc.length - 1] : "";
+    const field =
+      typeof loc === "string" && loc !== "body"
+        ? loc.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase())
+        : "";
+    // Pydantic v2 prefixes custom messages with "Value error, "
+    const msg = String(first.msg || "Invalid input").replace(/^Value error,\s*/i, "");
+    return field ? `${field}: ${msg}` : msg;
+  }
+  return fallback;
+}
+
 export type Product = {
   sku: string;
   title: string;
@@ -75,3 +103,36 @@ export type CompareResponse = {
 };
 
 export type SearchMode = "compare" | "keyword" | "semantic" | "hybrid";
+
+export type Health = {
+  status: string;
+  products: number;
+  embed_mode: string;
+  rerank_mode: string;
+  keyword_engine: string;
+};
+
+// Human-readable labels for the engine/provider modes reported by the backend.
+// embed_mode is "local:BAAI/bge-small-en-v1.5", "hf:BAAI/...", or "hashing-fallback".
+export function embedLabel(mode?: string): { text: string; dense: boolean } {
+  if (!mode) return { text: "—", dense: false };
+  if (mode.startsWith("local:"))
+    return { text: `${modelShort(mode)} · local`, dense: true };
+  if (mode.startsWith("hf:"))
+    return { text: `${modelShort(mode)} · HF API`, dense: true };
+  return { text: "hashing fallback", dense: false };
+}
+export function keywordLabel(engine?: string): string {
+  if (engine === "elasticsearch") return "Elasticsearch · BM25";
+  if (engine === "tsvector") return "Postgres · tsvector";
+  return engine || "—";
+}
+export function rerankLabel(mode?: string): { text: string; active: boolean } {
+  if (mode?.startsWith("cross-encoder"))
+    return { text: "cross-encoder", active: true };
+  return { text: "lexical fallback", active: false };
+}
+function modelShort(mode: string): string {
+  const name = mode.split(":").slice(1).join(":"); // strip provider prefix
+  return name.split("/").pop() || name; // BAAI/bge-small-en-v1.5 -> bge-small-en-v1.5
+}
