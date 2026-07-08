@@ -25,7 +25,6 @@ import {
   IngestPipelineMock,
   KeywordSearchMock,
   ProductBlock,
-  QuoteGrid,
   SemanticSearchMock,
   StackShowcase,
 } from "@/components/landing-mocks";
@@ -195,34 +194,6 @@ function HeroVisual() {
   );
 }
 
-/** White headline box floating on the grainy proof band, framed with dashed
-    guides and selection handles (Infisical "loved by developers" banner). */
-function ProofHeadlineBox() {
-  return (
-    <div className="relative mx-auto max-w-3xl">
-      {/* full-bleed dashed guides through the box edges (clipped by the band) */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-[-100vw] top-0 border-t border-dashed border-black/25" />
-      <div aria-hidden className="pointer-events-none absolute inset-x-[-100vw] bottom-0 border-t border-dashed border-black/25" />
-
-      <div className="relative z-40 border border-v2-border bg-v2-bg px-6 py-12 text-center shadow-[0_30px_60px_-30px_rgba(0,0,0,0.35)] md:py-16">
-        <h2 className="text-balance text-display font-medium leading-tight">
-          The proof shows up in the <Highlight>numbers</Highlight>.
-        </h2>
-
-        {/* corner + mid-edge selection handles */}
-        <CornerHandle className="left-0 top-0 -translate-x-1/2 -translate-y-1/2" />
-        <CornerHandle className="right-0 top-0 translate-x-1/2 -translate-y-1/2" />
-        <CornerHandle className="bottom-0 left-0 -translate-x-1/2 translate-y-1/2" />
-        <CornerHandle className="bottom-0 right-0 translate-x-1/2 translate-y-1/2" />
-        <CornerHandle className="left-1/2 top-0 -translate-x-1/2 -translate-y-1/2" />
-        <CornerHandle className="left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2" />
-        <CornerHandle className="left-0 top-1/2 -translate-x-1/2 -translate-y-1/2" />
-        <CornerHandle className="right-0 top-1/2 translate-x-1/2 -translate-y-1/2" />
-      </div>
-    </div>
-  );
-}
-
 /** Decorative dotted 3×3 icon grid (Infisical reliability visual). */
 function ReliabilityVisual() {
   const cells: ({ icon: typeof Database; lime?: boolean } | null)[] = [
@@ -243,9 +214,8 @@ function ReliabilityVisual() {
           c ? (
             <div
               key={i}
-              className={`v2-tile border text-v2-text shadow-[0_10px_20px_-12px_rgba(0,0,0,0.45)] ${
-                c.lime ? "border-v2-border bg-v2-volt" : "border-v2-border bg-v2-bg"
-              }`}
+              className={`v2-tile border text-v2-text shadow-[0_10px_20px_-12px_rgba(0,0,0,0.45)] ${c.lime ? "border-v2-border bg-v2-volt" : "border-v2-border bg-v2-bg"
+                }`}
             >
               <c.icon strokeWidth={1.6} />
             </div>
@@ -314,7 +284,7 @@ export default function Landing() {
           <div className="mt-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <p className="max-w-[640px] text-base leading-relaxed text-v2-text-subtle md:text-lg" style={{ opacity: 0.72 }}>
               Keyword search matches strings. Semvex matches intent — compare BM25,
-              dense-vector, and hybrid ranking on one query.
+              dense-vector, and hybrid ranking on one query. Fully open source
             </p>
             <div className="flex shrink-0 flex-wrap items-center gap-3">
               <Link href="/signin">
@@ -551,27 +521,6 @@ export default function Landing() {
         </FrameContainer>
       </FrameSection>
 
-      {/* Header: Customer stories */}
-      <FrameSection hairline="both" className="py-5">
-        <FrameContainer>
-          <SectionEyebrow align="left" className="mb-0" textSize="text-sm font-semibold tracking-wider">CUSTOMER STORIES</SectionEyebrow>
-        </FrameContainer>
-      </FrameSection>
-
-      {/* Quotes — Infisical testimonial band: grainy banner + headline box, then card grid */}
-      <FrameSection hairline="bottom" className="!p-0">
-        <div className="v2-proof-band">
-          <FrameContainer className="py-10 md:py-14">
-            <ProofHeadlineBox />
-          </FrameContainer>
-        </div>
-        <div className="border-t border-v2-border">
-          <FrameContainer className="py-0">
-            <QuoteGrid />
-          </FrameContainer>
-        </div>
-      </FrameSection>
-
       {/* Metrics */}
       <FrameSection id="metrics" hairline="both">
         <FrameContainer className="py-16 md:py-24">
@@ -637,19 +586,21 @@ export default function Landing() {
         <div className="v2-yellow-grain-bg v2-cta-band">
           <FrameContainer className="py-16 text-center md:py-20">
             <h2 className="text-balance mx-auto max-w-xl text-display font-medium text-v2-text">
-              Starting with Semvex is simple, fast, and free.
+              Semvex is free, open source, and yours to self-host.
             </h2>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-6">
               <Link href="/signin">
                 <Button size="lg">Try the demo <ArrowRight /></Button>
               </Link>
-              <Link
-                href="/signin"
+              <a
+                href="https://github.com/udai7/Semvex"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex min-h-[44px] items-center gap-2 font-sans text-sm font-medium text-v2-text hover:underline"
               >
                 <span className="font-mono text-xs opacity-80">&gt;</span>
-                <span>Sign in</span>
-              </Link>
+                <span>Star on GitHub</span>
+              </a>
             </div>
           </FrameContainer>
         </div>

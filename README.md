@@ -284,3 +284,22 @@ data/products.json   sample catalog (electronics + shoes)
 eval/evaluate.py     Recall@K / MRR / NDCG harness
 docs/                original PRD / architecture / production specs
 ```
+
+## Deploying
+
+For link previews and correct absolute OpenGraph/Twitter image URLs, set the
+frontend env var `NEXT_PUBLIC_SITE_URL` to your deployed origin (e.g.
+`https://your-domain.com`). See `docs/production.md` for the full deploy guide.
+
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to set
+up the project, run the tests, and open a pull request. Please also read our
+[Code of Conduct](CODE_OF_CONDUCT.md). Found a security issue? See
+[SECURITY.md](SECURITY.md) for private disclosure.
+
+## License
+
+Semvex is open source under the [MIT License](LICENSE) © 2026 Udai Das
+(Archilect Studio).
+

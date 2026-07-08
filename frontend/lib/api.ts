@@ -75,3 +75,36 @@ export type CompareResponse = {
 };
 
 export type SearchMode = "compare" | "keyword" | "semantic" | "hybrid";
+
+export type Health = {
+  status: string;
+  products: number;
+  embed_mode: string;
+  rerank_mode: string;
+  keyword_engine: string;
+};
+
+// Human-readable labels for the engine/provider modes reported by the backend.
+// embed_mode is "local:BAAI/bge-small-en-v1.5", "hf:BAAI/...", or "hashing-fallback".
+export function embedLabel(mode?: string): { text: string; dense: boolean } {
+  if (!mode) return { text: "—", dense: false };
+  if (mode.startsWith("local:"))
+    return { text: `${modelShort(mode)} · local`, dense: true };
+  if (mode.startsWith("hf:"))
+    return { text: `${modelShort(mode)} · HF API`, dense: true };
+  return { text: "hashing fallback", dense: false };
+}
+export function keywordLabel(engine?: string): string {
+  if (engine === "elasticsearch") return "Elasticsearch · BM25";
+  if (engine === "tsvector") return "Postgres · tsvector";
+  return engine || "—";
+}
+export function rerankLabel(mode?: string): { text: string; active: boolean } {
+  if (mode?.startsWith("cross-encoder"))
+    return { text: "cross-encoder", active: true };
+  return { text: "lexical fallback", active: false };
+}
+function modelShort(mode: string): string {
+  const name = mode.split(":").slice(1).join(":"); // strip provider prefix
+  return name.split("/").pop() || name; // BAAI/bge-small-en-v1.5 -> bge-small-en-v1.5
+}

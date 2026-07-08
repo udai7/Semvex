@@ -1066,6 +1066,69 @@ a {
   border-color: var(--good);
   color: var(--good);
 }
+
+/* catalog / dataset disclaimer under the example chips */
+.catalog-note {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-faint);
+  border-left: 2px solid var(--accent, #e0ed34);
+  padding: 6px 0 6px 12px;
+  margin: 0 0 16px;
+  max-width: 760px;
+}
+.catalog-note a {
+  color: var(--text-dim);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.catalog-note a:hover {
+  color: var(--text);
+}
+.catalog-note em {
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+/* live engine/provider status strip on the search page */
+.engine-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.engine-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--line-soft);
+  border-radius: 0;
+  padding: 5px 11px;
+}
+.engine-pill .engine-k {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.engine-pill b {
+  color: var(--text);
+  font-weight: 600;
+}
+.engine-pill.on {
+  border-color: var(--good);
+}
+.engine-pill.on b {
+  color: var(--good);
+}
+.engine-pill.warn {
+  border-color: var(--accent, #e0ed34);
+  background: color-mix(in srgb, var(--accent, #e0ed34) 14%, #fff);
+}
 .dym {
   font-size: 13.5px;
   color: var(--text-dim);

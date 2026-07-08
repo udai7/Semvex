@@ -1,33 +1,39 @@
 import Link from "next/link";
 import { FrameContainer, FrameSection } from "@/components/frame";
 
-const COLS: { title: string; links: { label: string; href: string }[] }[] = [
-  {
-    title: "Product",
-    links: [
-      { label: "Features", href: "/features" },
-      { label: "How it works", href: "/how-it-works" },
-      { label: "Benchmarks", href: "/benchmarks" },
-      { label: "Search demo", href: "/signin" },
-    ],
-  },
-  {
-    title: "Engine",
-    links: [
-      { label: "Semantic (pgvector)", href: "/how-it-works" },
-      { label: "Keyword (BM25 / ES)", href: "/how-it-works" },
-      { label: "Hybrid (RRF)", href: "/how-it-works" },
-    ],
-  },
-  {
-    title: "Project",
-    links: [
-      { label: "Architecture", href: "/architecture" },
-      { label: "Admin analytics", href: "/admin" },
-      { label: "Account", href: "/account" },
-    ],
-  },
-];
+const REPO = "https://github.com/udai7/Semvex";
+
+const COLS: {
+  title: string;
+  links: { label: string; href: string; external?: boolean }[];
+}[] = [
+    {
+      title: "Product",
+      links: [
+        { label: "Features", href: "/features" },
+        { label: "How it works", href: "/how-it-works" },
+        { label: "Benchmarks", href: "/benchmarks" },
+        { label: "Search demo", href: "/signin" },
+      ],
+    },
+    {
+      title: "Engine",
+      links: [
+        { label: "Semantic (pgvector)", href: "/how-it-works" },
+        { label: "Keyword (BM25 / ES)", href: "/how-it-works" },
+        { label: "Hybrid (RRF)", href: "/how-it-works" },
+      ],
+    },
+    {
+      title: "Project",
+      links: [
+        { label: "Architecture", href: `${REPO}/blob/main/docs/architecture.md`, external: true },
+        { label: "Features & analytics", href: `${REPO}/blob/main/docs/FEATURES.md`, external: true },
+        { label: "Deployment", href: `${REPO}/blob/main/docs/production.md`, external: true },
+        { label: "Source code", href: REPO, external: true },
+      ],
+    },
+  ];
 
 export default function SiteFooter() {
   return (
@@ -35,9 +41,8 @@ export default function SiteFooter() {
       <FrameContainer className="grid grid-cols-2 gap-10 py-14 md:grid-cols-5 md:py-16">
         <div className="col-span-2">
           <div className="flex items-center gap-2.5">
-            <span className="grid size-7 place-items-center bg-v2-text text-xs font-bold text-v2-bg">
-              S
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/semvex_mark.png" alt="" className="size-7 shrink-0" />
             <span className="text-[17px] font-semibold tracking-tight">Semvex</span>
           </div>
           <p className="mt-4 max-w-xs text-sm text-v2-text-subtle" style={{ opacity: 0.72 }}>
@@ -51,16 +56,29 @@ export default function SiteFooter() {
               {col.title}
             </h4>
             <ul className="space-y-2.5">
-              {col.links.map((l) => (
-                <li key={l.label}>
-                  <Link
-                    href={l.href}
-                    className="text-sm text-v2-text-subtle transition-colors hover:text-v2-text"
-                  >
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
+              {col.links.map((l) =>
+                l.external ? (
+                  <li key={l.label}>
+                    <a
+                      href={l.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-v2-text-subtle transition-colors hover:text-v2-text"
+                    >
+                      {l.label}
+                    </a>
+                  </li>
+                ) : (
+                  <li key={l.label}>
+                    <Link
+                      href={l.href}
+                      className="text-sm text-v2-text-subtle transition-colors hover:text-v2-text"
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                )
+              )}
             </ul>
           </div>
         ))}
@@ -69,7 +87,7 @@ export default function SiteFooter() {
       <div className="border-t border-v2-border">
         <FrameContainer className="flex flex-col items-start justify-between gap-3 py-6 text-xs text-v2-text-muted sm:flex-row sm:items-center">
           <span>© {new Date().getFullYear()} Semvex — semantic product search.</span>
-          <span className="font-mono">BM25 · dense-vector · hybrid (RRF)</span>
+          <span className="font-mono">Developed by Archilect Studios</span>
         </FrameContainer>
       </div>
     </FrameSection>

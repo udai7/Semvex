@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { FrameHairline } from "@/components/frame";
 import { Button } from "@/components/ui/button";
 import { api, Session } from "@/lib/api";
@@ -11,9 +11,8 @@ import { api, Session } from "@/lib/api";
 function Logo() {
   return (
     <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Semvex home">
-      <span className="grid size-7 place-items-center bg-v2-text text-xs font-bold text-v2-bg">
-        S
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/semvex_mark.png" alt="" className="size-7 shrink-0" />
       <span className="text-[17px] font-semibold tracking-tight text-v2-text">Semvex</span>
     </Link>
   );
@@ -93,8 +92,11 @@ export default function SiteHeader() {
                     Star the Repo
                   </Button>
                 </a>
-                <span className="hidden text-xs text-v2-text-muted lg:inline">{session?.email}</span>
-                <Button variant="ghost" size="sm" onClick={signOut}>
+                <Link href="/search">
+                  <Button size="sm">Dashboard</Button>
+                </Link>
+                <Button variant="ghost" size="sm" onClick={signOut} aria-label="Sign out" title="Sign out">
+                  <LogOut className="size-4" />
                   Sign out
                 </Button>
               </>
@@ -153,8 +155,11 @@ export default function SiteHeader() {
               </a>
               {authed ? (
                 <>
-                  <span className="text-xs text-v2-text-muted px-1">{session?.email}</span>
+                  <Link href="/search" onClick={() => setMobileOpen(false)}>
+                    <Button size="sm" className="w-full">Dashboard</Button>
+                  </Link>
                   <Button variant="ghost" size="sm" className="w-full" onClick={() => { signOut(); setMobileOpen(false); }}>
+                    <LogOut className="size-4" />
                     Sign out
                   </Button>
                 </>

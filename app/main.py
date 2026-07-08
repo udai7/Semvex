@@ -406,6 +406,7 @@ def _run(mode, request, q, k, category, brand, min_price, max_price, alpha, dive
     store.log_query(email, q, mode, len(results), took)
     return {
         "query": q, "mode": mode, "embed_mode": cat.embed_mode, "rerank_mode": cat.rerank_mode,
+        "keyword_engine": cat.keyword_mode,
         "took_ms": round(took, 2),
         "applied_filters": {k2: v for k2, v in
                             {"category": category, "brand": brand,
@@ -475,6 +476,7 @@ def search_compare(request: Request, q: str = "", k: int = config.DEFAULT_TOP_K,
     }
     return {
         "query": q, "embed_mode": cat.embed_mode, "rerank_mode": cat.rerank_mode,
+        "keyword_engine": cat.keyword_mode,
         "took_ms": took, "overlap": overlap,
         "applied_filters": {k2: v for k2, v in
                             {"category": category, "brand": brand,

@@ -79,9 +79,15 @@ EMBED_DIM = int(os.getenv("SEMVEX_EMBED_DIM", 384))
 EMBEDDING_PROVIDER = os.getenv("SEMVEX_EMBEDDING_PROVIDER", "auto")  # auto|local|hf|hashing
 HF_API_TOKEN = os.getenv("HF_API_TOKEN", "")
 HF_EMBEDDING_MODEL = os.getenv("HF_EMBEDDING_MODEL", EMBEDDING_MODEL_NAME)
+# HuggingFace retired the legacy `api-inference.huggingface.co/models/...` host in
+# 2025 in favour of the router-based Inference Providers. The `hf-inference`
+# provider's `pipeline/feature-extraction` route returns 2-D sentence vectors
+# (n, dim) for bge-small — verified live. Override via HF_API_URL if you point at
+# a dedicated Inference Endpoint or a different provider.
 HF_API_URL = os.getenv(
     "HF_API_URL",
-    f"https://api-inference.huggingface.co/models/{HF_EMBEDDING_MODEL}",
+    f"https://router.huggingface.co/hf-inference/models/{HF_EMBEDDING_MODEL}"
+    "/pipeline/feature-extraction",
 )
 
 # --- Elasticsearch (optional keyword engine) ---------------------------------
