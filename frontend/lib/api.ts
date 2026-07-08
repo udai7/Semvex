@@ -20,6 +20,34 @@ export async function api<T = any>(
   return { ok: res.ok, status: res.status, data };
 }
 
+// Turn a failed API response body into a human-readable message.
+// Handles our own `{ error }` responses, FastAPI string `{ detail }`, and
+// FastAPI/Pydantic validation arrays `{ detail: [{ loc, msg }] }` (e.g. an
+// invalid email) — which would otherwise show as a generic fallback.
+export function apiError(
+  data: any,
+  fallback = "Something went wrong. Please try again."
+): string {
+  if (!data) return fallback;
+  if (typeof data.error === "string" && data.error) return data.error;
+
+  const detail = data.detail;
+  if (typeof detail === "string" && detail) return detail;
+
+  if (Array.isArray(detail) && detail.length) {
+    const first = detail[0] || {};
+    const loc = Array.isArray(first.loc) ? first.loc[first.loc.length - 1] : "";
+    const field =
+      typeof loc === "string" && loc !== "body"
+        ? loc.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase())
+        : "";
+    // Pydantic v2 prefixes custom messages with "Value error, "
+    const msg = String(first.msg || "Invalid input").replace(/^Value error,\s*/i, "");
+    return field ? `${field}: ${msg}` : msg;
+  }
+  return fallback;
+}
+
 export type Product = {
   sku: string;
   title: string;

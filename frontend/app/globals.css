@@ -683,6 +683,32 @@ a {
   border-color: var(--text);
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
 }
+/* password field with show/hide toggle */
+.pw-field {
+  position: relative;
+  display: block;
+}
+.pw-field input {
+  width: 100%;
+  padding-right: 42px;
+}
+.pw-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.pw-toggle:hover {
+  color: var(--text);
+}
 .hint {
   color: var(--text-faint);
   font-size: 13px;

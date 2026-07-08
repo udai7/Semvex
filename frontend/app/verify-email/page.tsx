@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { api, apiError } from "@/lib/api";
 
 export default function VerifyEmail() {
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function VerifyEmail() {
     });
     setBusy(false);
     if (!ok) {
-      setError(data.error || "Verification failed.");
+      setError(apiError(data, "Verification failed."));
       return;
     }
     // Verified — carry the new setup preauth into the 2FA step.
@@ -57,7 +57,7 @@ export default function VerifyEmail() {
     });
     setResending(false);
     if (!ok) {
-      setError(data.error || "Could not resend the code.");
+      setError(apiError(data, "Could not resend the code."));
       return;
     }
     setNotice("A new code is on its way. Check your inbox.");

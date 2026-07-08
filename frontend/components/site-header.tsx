@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LogOut, Menu, X } from "lucide-react";
 import { FrameHairline } from "@/components/frame";
@@ -20,6 +20,7 @@ function Logo() {
 
 export default function SiteHeader() {
   const router = useRouter();
+  const pathname = usePathname();
   const [session, setSession] = useState<Session | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -43,18 +44,24 @@ export default function SiteHeader() {
 
   const authed = session?.authenticated;
 
-  const navLinks = [
+  // On the logged-in app/dashboard views, drop the marketing links and show only
+  // the dashboard nav so it stays focused.
+  const DASHBOARD = ["/search", "/account", "/admin"];
+  const inDashboard = DASHBOARD.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+  const marketingLinks = [
     { href: "/features", label: "Features" },
     { href: "/how-it-works", label: "How it works" },
     { href: "/benchmarks", label: "Benchmarks" },
-    ...(authed
-      ? [
-          { href: "/search", label: "Search" },
-          { href: "/account", label: "Account" },
-          ...(session?.is_admin ? [{ href: "/admin", label: "Admin" }] : []),
-        ]
-      : []),
   ];
+  const dashboardLinks = authed
+    ? [
+        { href: "/search", label: "Search" },
+        { href: "/account", label: "Account" },
+        ...(session?.is_admin ? [{ href: "/admin", label: "Admin" }] : []),
+      ]
+    : [];
+  const navLinks = inDashboard ? dashboardLinks : [...marketingLinks, ...dashboardLinks];
 
   return (
     <header className="sticky top-0 z-50 bg-v2-bg">

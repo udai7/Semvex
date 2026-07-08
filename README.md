@@ -1,5 +1,7 @@
 # Semvex — Semantic Product Search
 
+![Semvex — search that understands what shoppers mean](frontend/public/image.png)
+
 A working, auth-gated demo of **semantic vs. keyword vs. hybrid** product search,
 built from the specs in [`docs/`](./docs). Keyword search matches strings; Semvex
 also matches *intent* — so "sports sneakers" finds running shoes and "cheap gaming
